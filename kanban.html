@@ -50,7 +50,7 @@
   <div class="wrapper">
     <div class="nav" style="margin-bottom: 10px;">
       <h2 style="margin:0;">Laporan Operasional</h2>
-      <a href="admin.html" class="btn-header">Kembali</a>
+      <a href="#" onclick="history.back(); return false;" class="btn-header">Kembali</a>
     </div>
     <p class="date-subtitle" id="current-date"></p>
 
@@ -75,7 +75,7 @@
   <script>
     const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwmVsqTzRc1kHwbjarDIU7p_ghxPiDgVHBM_Bds1p-4FYEOWrL1s1wkLriH-x4TD_M56A/exec";
     
-    if (localStorage.getItem('homie_role') !== 'Admin') {
+    if (!localStorage.getItem('homie_role')) {
       window.location.href = "index.html";
     }
 
