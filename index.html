@@ -12,7 +12,18 @@
     .form-group { margin-bottom: 15px; }
     select, input { width: 100%; padding: 12px; border: 1px solid #e1e1e1; border-radius: 6px; font-size: 16px; box-sizing: border-box; background-color: #f7f7f5; }
     select:focus, input:focus { outline: none; border-color: #2eaadc; }
-    #reader { width: 100%; border-radius: 8px; overflow: hidden; border: 1px solid #e1e1e1; margin-bottom: 15px; }
+    
+    /* Perkecil ukuran kotak scanner */
+    #reader { width: 100%; max-width: 300px; margin: 0 auto 15px auto; border-radius: 8px; overflow: hidden; border: 1px solid #e1e1e1; }
+    
+    /* Desain UI Konfirmasi setelah scan */
+    #scan-result { display: none; text-align: center; margin-bottom: 15px; padding: 20px; border: 1px solid #e1e1e1; border-radius: 8px; background-color: #fcfcfc; }
+    #scan-result p { margin-top: 0; margin-bottom: 15px; font-size: 16px; color: #37352f; }
+    #scanned-id { font-size: 18px; font-weight: 700; color: #2eaadc; word-break: break-all; }
+    .btn-action { width: 100%; padding: 12px 20px; border-radius: 6px; font-size: 16px; font-weight: 600; cursor: pointer; border: none; margin-bottom: 10px; }
+    .btn-save { background-color: #2eaadc; color: white; }
+    .btn-cancel { background-color: #f7f7f5; color: #37352f; border: 1px solid #e1e1e1; }
+
     #status-box { padding: 15px; border-radius: 6px; text-align: center; font-weight: 500; display: none; margin-top: 15px; }
     .success { background-color: #ebf5ed; color: #216e4e; border: 1px solid #c3e2cc; }
     .error { background-color: #fbe4e4; color: #c92a2a; border: 1px solid #f4c3c3; }
@@ -33,12 +44,22 @@
   <div class="form-group">
     <input type="text" id="picName" placeholder="Nama Anda (Misal: Hasan)">
   </div>
+  
   <div id="reader"></div>
+  
+  <div id="scan-result">
+    <p>Hasil Scan:<br><strong id="scanned-id"></strong></p>
+    <button id="save-btn" class="btn-action btn-save">Simpan Data</button>
+    <button id="cancel-btn" class="btn-action btn-cancel">Batal & Scan Ulang</button>
+  </div>
+
   <div id="status-box"></div>
 
   <script>
     const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxFT2c2CT0ctNu_4mNIMLAd57MYA2EeSSUBcM0OvkEnpgxIuuTMdEStpyznjuT0AiNuVg/exec"; 
     let isProcessing = false;
+    let currentScannedText = "";
+    let html5QrCode;
 
     function showStatus(message, type) {
       const box = document.getElementById('status-box');
@@ -49,35 +70,71 @@
 
     function onScanSuccess(decodedText, decodedResult) {
       if (isProcessing) return;
-      const station = document.getElementById('station').value;
+      
       const picName = document.getElementById('picName').value;
-
       if (!picName) {
         showStatus("Nama PIC harus diisi terlebih dahulu!", "error");
+        setTimeout(() => { document.getElementById('status-box').style.display = 'none'; }, 3000);
         return;
       }
 
-      isProcessing = true;
+      isProcessing = true; // Kunci scanner agar tidak scan berulang kali
+      currentScannedText = decodedText;
+      
+      // Sembunyikan kamera, tampilkan UI Konfirmasi
+      document.getElementById('scanned-id').textContent = decodedText;
+      document.getElementById('reader').style.display = 'none';
+      document.getElementById('scan-result').style.display = 'block';
+      document.getElementById('status-box').style.display = 'none';
+    }
+
+    // Aksi Tombol Simpan
+    document.getElementById('save-btn').addEventListener('click', () => {
+      const station = document.getElementById('station').value;
+      const picName = document.getElementById('picName').value;
+
       showStatus("Mengirim data ke database...", "loading");
+      document.getElementById('save-btn').disabled = true;
+      document.getElementById('cancel-btn').disabled = true;
 
       fetch(APPS_SCRIPT_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({ qrText: decodedText, station: station, picName: picName })
+        body: JSON.stringify({ qrText: currentScannedText, station: station, picName: picName })
       })
       .then(response => response.json())
       .then(data => {
-        if (data.status === "success") { showStatus(data.message + " (" + decodedText + ")", "success"); } 
-        else { showStatus(data.message, "error"); }
-        setTimeout(() => { document.getElementById('status-box').style.display = 'none'; isProcessing = false; }, 3000);
+        if (data.status === "success") { 
+          showStatus(data.message + " (" + currentScannedText + ")", "success"); 
+        } else { 
+          showStatus(data.message, "error"); 
+        }
+        setTimeout(() => { resetScanner(); }, 3000);
       })
       .catch(error => {
         showStatus("Koneksi gagal. Coba lagi.", "error");
-        setTimeout(() => { isProcessing = false; }, 2000);
+        document.getElementById('save-btn').disabled = false;
+        document.getElementById('cancel-btn').disabled = false;
       });
+    });
+
+    // Aksi Tombol Batal
+    document.getElementById('cancel-btn').addEventListener('click', () => {
+      resetScanner();
+    });
+
+    function resetScanner() {
+      currentScannedText = "";
+      isProcessing = false;
+      document.getElementById('scan-result').style.display = 'none';
+      document.getElementById('status-box').style.display = 'none';
+      document.getElementById('reader').style.display = 'block';
+      document.getElementById('save-btn').disabled = false;
+      document.getElementById('cancel-btn').disabled = false;
     }
 
-    const html5QrCode = new Html5Qrcode("reader");
+    // Inisialisasi Kamera
+    html5QrCode = new Html5Qrcode("reader");
     html5QrCode.start(
       { facingMode: "environment" },
       { fps: 10, qrbox: { width: 250, height: 250 } },
