@@ -4,49 +4,42 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Scanner - Homie Laundry</title>
+  <link rel="stylesheet" href="style.css">
   <script src="https://unpkg.com/html5-qrcode"></script>
   <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; background-color: #f7f7f5; color: #37352f; padding: 20px; max-width: 400px; margin: 0 auto; }
-    h2 { font-weight: 600; text-align: center; margin-top: 0; margin-bottom: 5px; color: #2eaadc; }
-    p.subtitle { text-align: center; color: #787774; font-size: 14px; margin-bottom: 25px; }
+    .wrapper { max-width: 450px; margin: 0 auto; }
+    #reader { width: 100%; max-width: 350px; margin: 0 auto 20px auto; border-radius: 20px; overflow: hidden; border: 4px solid rgba(255,255,255,0.8); background: #000; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
     
-    .nav { display: flex; justify-content: space-between; margin-bottom: 20px; align-items: center; }
-    .back-btn { text-decoration: none; color: #787774; font-size: 14px; background: #fff; padding: 5px 10px; border-radius: 6px; border: 1px solid #e1e1e1; }
-    .user-badge { background-color: #e5f4fa; color: #007bc0; padding: 6px 12px; border-radius: 20px; font-size: 13px; font-weight: 600; border: 1px solid #bce1f4; }
-    
-    #reader { width: 100%; max-width: 300px; margin: 0 auto 15px auto; border-radius: 8px; overflow: hidden; border: 1px solid #e1e1e1; background: #000; }
-    
-    #scan-result { display: none; text-align: center; margin-bottom: 15px; padding: 20px; border: 1px solid #e1e1e1; border-radius: 8px; background-color: #ffffff; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
-    #scan-result p { margin-top: 0; margin-bottom: 15px; font-size: 16px; color: #37352f; }
-    #scanned-id { font-size: 20px; font-weight: 700; color: #2eaadc; word-break: break-all; }
-    .btn-action { width: 100%; padding: 12px 20px; border-radius: 6px; font-size: 16px; font-weight: 600; cursor: pointer; border: none; margin-bottom: 10px; }
-    .btn-save { background-color: #2eaadc; color: white; }
-    .btn-cancel { background-color: #f7f7f5; color: #37352f; border: 1px solid #e1e1e1; }
+    #scan-result { display: none; text-align: center; }
+    #scanned-id { font-size: 24px; font-weight: 700; color: #2eaadc; word-break: break-all; margin-bottom: 20px; display: block; }
 
-    #status-box { padding: 15px; border-radius: 6px; text-align: center; font-weight: 500; display: none; margin-top: 15px; }
-    .success { background-color: #ebf5ed; color: #216e4e; border: 1px solid #c3e2cc; }
-    .error { background-color: #fbe4e4; color: #c92a2a; border: 1px solid #f4c3c3; }
-    .loading { background-color: #e5f4fa; color: #007bc0; border: 1px solid #bce1f4; }
+    #status-box { padding: 15px; border-radius: 12px; text-align: center; font-weight: 600; display: none; margin-top: 15px; font-size: 14px; }
+    .success { background: rgba(235, 245, 237, 0.9); color: #216e4e; border: 1px solid #c3e2cc; }
+    .error { background: rgba(251, 228, 228, 0.9); color: #c92a2a; border: 1px solid #f4c3c3; }
+    .loading { background: rgba(229, 244, 250, 0.9); color: #007bc0; border: 1px solid #bce1f4; }
   </style>
 </head>
 <body>
-  <div class="nav">
-    <a href="#" id="back-link" class="back-btn">Keluar</a>
-    <span class="user-badge" id="user-badge">Memuat...</span>
-  </div>
+  <div class="wrapper">
+    <div class="nav">
+      <a href="#" id="back-link" class="back-btn">Keluar</a>
+      <span class="user-badge" id="user-badge">Memuat...</span>
+    </div>
 
-  <h2>Stasiun <span id="station-name">...</span></h2>
-  <p class="subtitle">Arahkan kamera ke QR Code pesanan.</p>
-  
-  <div id="reader"></div>
-  
-  <div id="scan-result">
-    <p>ID Pesanan:<br><strong id="scanned-id"></strong></p>
-    <button id="save-btn" class="btn-action btn-save">Selesaikan Proses Ini</button>
-    <button id="cancel-btn" class="btn-action btn-cancel">Batal & Scan Ulang</button>
-  </div>
+    <h2 class="text-center">Stasiun <span id="station-name">...</span></h2>
+    <p class="subtitle">Arahkan kamera ke QR Code pesanan.</p>
+    
+    <div id="reader"></div>
+    
+    <div id="scan-result" class="card">
+      <p style="margin-top:0; margin-bottom: 5px;">ID Pesanan:</p>
+      <strong id="scanned-id"></strong>
+      <button id="save-btn" class="btn">Selesaikan Proses Ini</button>
+      <button id="cancel-btn" class="btn btn-secondary" style="margin-top: 10px;">Batal & Scan Ulang</button>
+    </div>
 
-  <div id="status-box"></div>
+    <div id="status-box"></div>
+  </div>
 
   <script>
     const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwmVsqTzRc1kHwbjarDIU7p_ghxPiDgVHBM_Bds1p-4FYEOWrL1s1wkLriH-x4TD_M56A/exec"; 
@@ -55,7 +48,6 @@
     const picName = localStorage.getItem('homie_name');
     const tempRole = localStorage.getItem('homie_temp_role');
     
-    // Tentukan role mana yang sedang aktif (Admin bisa ganti-ganti)
     const activeRole = (baseRole === 'Admin' && tempRole) ? tempRole : baseRole;
 
     if (!baseRole) {

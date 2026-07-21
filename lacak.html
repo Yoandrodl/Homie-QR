@@ -4,47 +4,40 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Lacak Pesanan - Homie Laundry</title>
+  <link rel="stylesheet" href="style.css">
   <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; background-color: #f7f7f5; color: #37352f; padding: 20px; max-width: 400px; margin: 40px auto; }
-    .card { background-color: #ffffff; padding: 30px 20px; border-radius: 8px; border: 1px solid #e1e1e1; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
-    h2 { font-weight: 600; text-align: center; margin-top: 0; margin-bottom: 5px; color: #2eaadc; }
-    p.subtitle { text-align: center; color: #787774; font-size: 14px; margin-bottom: 25px; }
-    .form-group { margin-bottom: 15px; }
-    input { width: 100%; padding: 12px; border: 1px solid #e1e1e1; border-radius: 6px; font-size: 16px; box-sizing: border-box; background-color: #fcfcfc; text-align: center; font-weight: bold; letter-spacing: 1px; }
-    input:focus { outline: none; border-color: #2eaadc; }
-    .btn { width: 100%; padding: 12px; border-radius: 6px; font-size: 16px; font-weight: 600; cursor: pointer; border: none; background-color: #2eaadc; color: white; margin-top: 10px; }
-    .btn:disabled { background-color: #a8d5e8; cursor: not-allowed; }
+    .wrapper { max-width: 450px; margin: 60px auto; }
     
-    #result-box { display: none; margin-top: 25px; padding: 15px; border-radius: 6px; background-color: #ebf5ed; border: 1px solid #c3e2cc; }
-    .res-label { font-size: 12px; color: #555; margin-bottom: 3px; display: block; }
-    .res-value { font-size: 16px; font-weight: 600; color: #216e4e; margin-bottom: 15px; display: block; }
+    #result-box { display: none; margin-top: 25px; padding: 25px; background: rgba(255,255,255,0.8); border: 1px solid rgba(255,255,255,0.9); }
+    .res-label { font-size: 13px; color: #888; margin-bottom: 4px; display: block; font-weight: 500; }
+    .res-value { font-size: 18px; font-weight: 700; color: #2b3a4a; margin-bottom: 20px; display: block; }
     
-    .status-badge { display: inline-block; padding: 8px 15px; background: #2eaadc; color: white; border-radius: 20px; font-size: 16px; font-weight: bold; }
-    
-    .error-msg { color: #c92a2a; font-size: 14px; text-align: center; margin-top: 10px; display: none; }
+    .status-badge { display: inline-block; padding: 10px 20px; background: linear-gradient(135deg, #a1c4fd, #c2e9fb); color: #1a4a66; border-radius: 50px; font-size: 16px; font-weight: 700; box-shadow: 0 4px 15px rgba(161, 196, 253, 0.3); }
   </style>
 </head>
 <body>
-  <div class="card">
-    <h2>Lacak Laundry</h2>
-    <p class="subtitle">Masukkan ID Pesanan / Nomor Resi Anda.</p>
-    
-    <div class="form-group">
-      <input type="text" id="orderId" placeholder="Misal: JUL2126-001">
-    </div>
-    
-    <button id="track-btn" class="btn">Lacak Sekarang</button>
-    <div id="error-msg" class="error-msg"></div>
-
-    <div id="result-box">
-      <span class="res-label">Atas Nama:</span>
-      <span class="res-value" id="res-name">-</span>
+  <div class="wrapper">
+    <div class="card">
+      <h2 class="text-center">Lacak Laundry</h2>
+      <p class="subtitle">Masukkan ID Pesanan / Nomor Resi Anda.</p>
       
-      <span class="res-label">Berat & Jumlah:</span>
-      <span class="res-value" id="res-detail">-</span>
+      <div class="form-group" style="margin-bottom: 20px;">
+        <input type="text" id="orderId" placeholder="Misal: JUL2126-001" style="text-align: center; font-weight: bold; letter-spacing: 1px; font-size: 18px;">
+      </div>
+      
+      <button id="track-btn" class="btn">Lacak Sekarang</button>
+      <div id="error-msg" class="error-msg"></div>
 
-      <span class="res-label">Status Terkini:</span>
-      <div class="status-badge" id="res-status">-</div>
+      <div id="result-box" class="card" style="box-shadow: none;">
+        <span class="res-label">Atas Nama:</span>
+        <span class="res-value" id="res-name">-</span>
+        
+        <span class="res-label">Berat & Jumlah:</span>
+        <span class="res-value" id="res-detail" style="font-size: 16px;">-</span>
+
+        <span class="res-label">Status Terkini:</span>
+        <div class="status-badge" id="res-status">-</div>
+      </div>
     </div>
   </div>
 

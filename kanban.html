@@ -4,44 +4,73 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Laporan Operasional - Homie Laundry</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
   <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; background-color: #f7f7f5; color: #37352f; padding: 20px; margin: 0; }
-    .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; max-width: 600px; margin-left: auto; margin-right: auto; }
-    h2 { font-weight: 600; color: #2eaadc; margin: 0; }
-    .btn-back { text-decoration: none; color: #787774; background: #fff; padding: 8px 15px; border-radius: 6px; border: 1px solid #e1e1e1; font-size: 14px; font-weight: 500; }
+    .wrapper { max-width: 650px; margin: 0 auto; }
     
-    .date-subtitle { text-align: left; color: #787774; font-size: 14px; margin-top: 0; margin-bottom: 25px; font-weight: 500; max-width: 600px; margin-left: auto; margin-right: auto; }
+    .date-subtitle { text-align: left; color: #888; font-size: 14px; margin-top: 0; margin-bottom: 25px; font-weight: 500; }
 
-    .report-container { max-width: 600px; margin: 0 auto; padding-bottom: 30px; display: flex; flex-direction: column; gap: 15px; }
+    .report-container { display: flex; flex-direction: column; gap: 18px; padding-bottom: 40px; }
     
-    .card { background: #fff; padding: 15px; border-radius: 6px; box-shadow: 0 2px 5px rgba(0,0,0,0.06); border-left: 4px solid #2eaadc; }
-    .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-    .card-id { font-size: 12px; color: #787774; }
-    .card-status { font-size: 11px; font-weight: bold; background: #e5f4fa; color: #007bc0; padding: 4px 8px; border-radius: 12px; }
+    .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .card-id { font-size: 13px; color: #888; font-weight: 500; }
+    .card-status { font-size: 11px; font-weight: bold; background: linear-gradient(135deg, #a1c4fd, #c2e9fb); color: #1a4a66; padding: 4px 10px; border-radius: 12px; }
     
-    .card-name { font-weight: 600; margin: 0; font-size: 16px; }
-    .card-details { font-size: 12px; color: #555; }
+    .card-name { font-weight: 600; margin: 0; font-size: 18px; color: #2b3a4a; }
+    .card-details { font-size: 13px; color: #555; font-weight: 500; }
     
-    .name-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
-    .timeline { display: flex; align-items: flex-start; justify-content: space-between; gap: 4px; font-size: 11px; color: #787774; border-top: 1px dashed #eee; padding-top: 10px; overflow-x: auto; }
-    .step { display: flex; flex-direction: column; align-items: center; min-width: 40px; }
-    .step-icon { font-size: 14px; margin-bottom: 2px; }
-    .step-name { font-weight: normal; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 45px; }
-    .arrow { color: #ccc; padding-top: 2px; font-size: 10px; }
+    .name-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px; }
+    
+    .timeline { display: flex; align-items: flex-start; justify-content: space-between; gap: 5px; font-size: 11px; color: #888; border-top: 1px dashed rgba(0,0,0,0.1); padding-top: 12px; overflow-x: auto; }
+    .step { display: flex; flex-direction: column; align-items: center; min-width: 42px; }
+    .step-icon { font-size: 16px; margin-bottom: 4px; filter: drop-shadow(0 2px 2px rgba(0,0,0,0.05)); }
+    .step-name { font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 50px; }
+    .arrow { color: #ccc; padding-top: 4px; font-size: 10px; }
 
-    #loading { text-align: center; margin-top: 50px; color: #787774; }
+    .btn-print-qr { background: transparent; border: 1px solid #ddd; border-radius: 6px; padding: 4px 8px; font-size: 12px; cursor: pointer; color: #555; transition: all 0.2s; font-family: inherit; }
+    .btn-print-qr:hover { background: #f0f0f0; border-color: #ccc; }
+
+    /* Modal for QR Print */
+    .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(5px); display: none; align-items: center; justify-content: center; z-index: 999; }
+    .modal-content { background: white; padding: 30px; border-radius: 20px; text-align: center; max-width: 300px; width: 90%; box-shadow: 0 10px 40px rgba(0,0,0,0.2); }
+    #modal-qr-code { margin: 20px auto; padding: 10px; background: white; border-radius: 12px; border: 1px solid #eee; display: inline-block; }
+    .modal-order-id { font-size: 24px; font-weight: 700; color: #333; letter-spacing: 1px; margin-bottom: 5px; }
+    
+    @media print {
+      body * { visibility: hidden; }
+      #print-area, #print-area * { visibility: visible; }
+      #print-area { position: absolute; left: 0; top: 0; width: 100%; text-align: center; }
+      .modal-overlay { background: none; }
+      .btn { display: none !important; }
+    }
   </style>
 </head>
 <body>
-  <div class="header">
-    <h2>Laporan Operasional</h2>
-    <a href="admin.html" class="btn-back">Kembali</a>
+  <div class="wrapper">
+    <div class="nav" style="margin-bottom: 10px;">
+      <h2 style="margin:0;">Laporan Operasional</h2>
+      <a href="admin.html" class="btn-header">Kembali</a>
+    </div>
+    <p class="date-subtitle" id="current-date"></p>
+
+    <div id="loading" class="text-center" style="margin-top: 50px; color: #888;">Memuat data dari database...</div>
+
+    <div class="report-container" id="report-list" style="display: none;"></div>
   </div>
-  <p class="date-subtitle" id="current-date"></p>
 
-  <div id="loading">Memuat data dari database...</div>
-
-  <div class="report-container" id="report-list" style="display: none;"></div>
+  <!-- QR Modal -->
+  <div class="modal-overlay" id="qr-modal">
+    <div class="modal-content" id="print-area">
+      <h3 style="margin-top:0; color:#2b3a4a; font-size: 20px;">Cetak Resi QR</h3>
+      <div class="modal-order-id" id="modal-display-id"></div>
+      <div id="modal-qr-code"></div>
+      <div style="display:flex; gap: 10px; margin-top: 15px;">
+        <button class="btn btn-secondary" onclick="closeModal()">Tutup</button>
+        <button class="btn" style="margin-top:0;" onclick="window.print()">🖨️ Print</button>
+      </div>
+    </div>
+  </div>
 
   <script>
     const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwmVsqTzRc1kHwbjarDIU7p_ghxPiDgVHBM_Bds1p-4FYEOWrL1s1wkLriH-x4TD_M56A/exec";
@@ -50,7 +79,6 @@
       window.location.href = "index.html";
     }
 
-    // Set tanggal hari ini
     const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
     document.getElementById('current-date').textContent = new Date().toLocaleDateString('id-ID', options);
 
@@ -80,11 +108,11 @@
       const container = document.getElementById('report-list');
       container.innerHTML = "";
 
-      // Dibalik agar pesanan terbaru (baris paling bawah di Sheet) muncul paling atas
       orders.reverse().forEach(order => {
         const card = document.createElement('div');
         card.className = 'card';
         
+        const orderId = order["Order ID"] || "-";
         const jmlPcs = order["Jumlah pakaian"] || order["Jumlah Pakaian"] || 0;
         const picTbg = order["Timbang"] || "-";
         const picCuci = order["Cuci"] || "-";
@@ -96,7 +124,7 @@
 
         card.innerHTML = `
           <div class="card-header">
-            <div class="card-id">${order["Order ID"] || "-"}</div>
+            <div class="card-id">${orderId} &nbsp; <button class="btn-print-qr" onclick="showQR('${orderId}')">🖨️ Cetak QR</button></div>
             <div class="card-status">${statusTxt}</div>
           </div>
           
@@ -124,6 +152,20 @@
         `;
         container.appendChild(card);
       });
+    }
+
+    function showQR(orderId) {
+      if (orderId === "-") return;
+      document.getElementById('modal-display-id').textContent = orderId;
+      const qr = qrcode(0, 'M');
+      qr.addData(orderId);
+      qr.make();
+      document.getElementById('modal-qr-code').innerHTML = qr.createImgTag(5, 0);
+      document.getElementById('qr-modal').style.display = 'flex';
+    }
+
+    function closeModal() {
+      document.getElementById('qr-modal').style.display = 'none';
     }
 
     loadData();

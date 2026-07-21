@@ -4,47 +4,46 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Login - Homie Laundry</title>
+  <link rel="stylesheet" href="style.css">
   <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; background-color: #f7f7f5; color: #37352f; padding: 20px; max-width: 400px; margin: 40px auto; }
-    .card { background-color: #ffffff; padding: 30px 20px; border-radius: 8px; border: 1px solid #e1e1e1; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
-    h2 { font-weight: 600; text-align: center; margin-top: 0; margin-bottom: 5px; color: #2eaadc; }
-    p.subtitle { text-align: center; color: #787774; font-size: 14px; margin-bottom: 25px; }
-    .form-group { margin-bottom: 15px; }
-    label { display: block; margin-bottom: 5px; font-weight: 500; font-size: 14px; }
-    input { width: 100%; padding: 12px; border: 1px solid #e1e1e1; border-radius: 6px; font-size: 16px; box-sizing: border-box; background-color: #fcfcfc; }
-    input:focus { outline: none; border-color: #2eaadc; }
-    .btn { width: 100%; padding: 12px; border-radius: 6px; font-size: 16px; font-weight: 600; cursor: pointer; border: none; background-color: #2eaadc; color: white; margin-top: 10px; }
-    .btn:disabled { background-color: #a8d5e8; cursor: not-allowed; }
-    .error-msg { color: #c92a2a; font-size: 14px; text-align: center; margin-top: 10px; display: none; }
-    .customer-link { display: block; text-align: center; margin-top: 20px; font-size: 14px; color: #787774; text-decoration: none; }
-    .customer-link:hover { text-decoration: underline; }
+    .wrapper { max-width: 400px; margin: 60px auto; }
+    .brand { text-align: center; margin-bottom: 30px; }
+    .brand h1 { margin: 0; font-size: 28px; background: linear-gradient(135deg, #FF9E7D, #FF6B6B); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .brand p { margin: 0; font-size: 14px; color: #888; font-weight: 500; }
+    .customer-link { display: block; text-align: center; margin-top: 25px; font-size: 13px; color: #888; text-decoration: none; transition: color 0.2s; font-weight: 500; }
+    .customer-link:hover { color: #FF9E7D; }
   </style>
 </head>
 <body>
-  <div class="card">
-    <h2>Homie Laundry</h2>
-    <p class="subtitle">Masuk ke Sistem Manajemen</p>
-    
-    <div class="form-group">
-      <label>Username</label>
-      <input type="text" id="username" placeholder="Masukkan username">
+  <div class="wrapper">
+    <div class="brand">
+      <h1>Homie Laundry Samarinda</h1>
+      <p>Management System</p>
     </div>
-    <div class="form-group">
-      <label>Password</label>
-      <input type="password" id="password" placeholder="Masukkan password">
+
+    <div class="card">
+      <h2 class="text-center" style="font-size: 20px;">Masuk</h2>
+      <p class="subtitle" style="margin-bottom: 30px;">Silakan login untuk melanjutkan.</p>
+      
+      <div class="form-group">
+        <label>Username</label>
+        <input type="text" id="username" placeholder="Masukkan username">
+      </div>
+      <div class="form-group" style="margin-bottom: 25px;">
+        <label>Password</label>
+        <input type="password" id="password" placeholder="Masukkan password">
+      </div>
+      
+      <button id="login-btn" class="btn">Login</button>
+      <div id="error-msg" class="error-msg"></div>
     </div>
-    
-    <button id="login-btn" class="btn">Login</button>
-    <div id="error-msg" class="error-msg"></div>
+
+    <a href="lacak.html" class="customer-link">Bukan karyawan? Lacak pesanan Anda di sini.</a>
   </div>
 
-  <a href="lacak.html" class="customer-link">Bukan karyawan? Lacak pesanan Anda di sini.</a>
-
   <script>
-    // URL WEB APP ANDA
     const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwmVsqTzRc1kHwbjarDIU7p_ghxPiDgVHBM_Bds1p-4FYEOWrL1s1wkLriH-x4TD_M56A/exec";
 
-    // Cek jika sudah login
     if (localStorage.getItem('homie_role')) {
       redirectUser(localStorage.getItem('homie_role'));
     }
@@ -73,7 +72,6 @@
       .then(res => res.json())
       .then(data => {
         if (data.status === 'success') {
-          // Simpan data login di HP
           localStorage.setItem('homie_name', data.user.name);
           localStorage.setItem('homie_role', data.user.role);
           redirectUser(data.user.role);
@@ -85,7 +83,7 @@
         }
       })
       .catch(err => {
-        errBox.textContent = "Koneksi gagal. Periksa internet atau URL Anda.";
+        errBox.textContent = "Koneksi gagal. Periksa internet Anda.";
         errBox.style.display = 'block';
         btn.textContent = "Login";
         btn.disabled = false;
