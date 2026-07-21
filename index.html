@@ -77,8 +77,15 @@
       });
     }
 
-    const html5QrcodeScanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: {width: 250, height: 250} }, false);
-    html5QrcodeScanner.render(onScanSuccess);
+    const html5QrCode = new Html5Qrcode("reader");
+    html5QrCode.start(
+      { facingMode: "environment" },
+      { fps: 10, qrbox: { width: 250, height: 250 } },
+      onScanSuccess
+    ).catch(err => {
+      showStatus("Akses kamera ditolak atau kamera belakang tidak ditemukan.", "error");
+      console.error(err);
+    });
   </script>
 </body>
 </html>
