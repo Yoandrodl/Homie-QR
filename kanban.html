@@ -16,9 +16,16 @@
     .count { background: #e1e1e1; color: #555; padding: 2px 8px; border-radius: 20px; font-size: 12px; }
     
     .card { background: #fff; padding: 15px; border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 10px; border-left: 4px solid #2eaadc; }
-    .card-id { font-size: 12px; color: #787774; margin-bottom: 5px; }
-    .card-name { font-weight: 600; margin: 0 0 10px 0; font-size: 16px; }
-    .card-details { font-size: 12px; color: #555; display: flex; justify-content: space-between; }
+    .card-id { font-size: 12px; color: #787774; margin-bottom: 8px; }
+    .card-name { font-weight: 600; margin: 0; font-size: 16px; }
+    .card-details { font-size: 12px; color: #555; }
+    
+    .name-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+    .timeline { display: flex; align-items: flex-start; gap: 4px; font-size: 11px; color: #787774; border-top: 1px dashed #eee; padding-top: 10px; overflow-x: auto; }
+    .step { display: flex; flex-direction: column; align-items: center; min-width: 40px; }
+    .step-icon { font-size: 14px; margin-bottom: 2px; }
+    .step-name { font-weight: normal; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 45px; }
+    .arrow { color: #ccc; padding-top: 2px; font-size: 10px; }
     
     /* Specific Colors */
     .col-cuci { border-color: #2eaadc; }
@@ -108,12 +115,35 @@
         if (cols.includes(status)) {
           const card = document.createElement('div');
           card.className = 'card';
+          
+          const jmlPcs = order["Jumlah pakaian"] || order["Jumlah Pakaian"] || 0;
+          const picTbg = order["Timbang"] || "-";
+          const picCuci = order["Cuci"] || "-";
+          const picKering = order["Pengeringan"] || "-";
+          const picSet = order["Setrika"] || "-";
+          const picPack = order["Packing"] || "-";
+
           card.innerHTML = `
-            <div class="card-id">${order["Order ID"]}</div>
-            <p class="card-name">${order["Nama Pelanggan"]}</p>
-            <div class="card-details">
-              <span>⚖️ ${order["Berat"]} Kg</span>
-              <span>👕 ${order["Jumlah Pakaian"]} Pcs</span>
+            <div class="card-id">${order["Order ID"] || "-"}</div>
+            
+            <div class="name-row">
+              <p class="card-name">${order["Nama Pelanggan"] || "-"}</p>
+              <div class="card-details">
+                <span>⚖️ ${order["Berat"] || 0} Kg</span> &nbsp;&nbsp;
+                <span>👕 ${jmlPcs} Pcs</span>
+              </div>
+            </div>
+            
+            <div class="timeline">
+              <div class="step" title="Timbang"><span class="step-icon">📦</span><span class="step-name">${picTbg}</span></div>
+              <span class="arrow">➔</span>
+              <div class="step" title="Cuci"><span class="step-icon">💧</span><span class="step-name">${picCuci}</span></div>
+              <span class="arrow">➔</span>
+              <div class="step" title="Pengeringan"><span class="step-icon">🌬️</span><span class="step-name">${picKering}</span></div>
+              <span class="arrow">➔</span>
+              <div class="step" title="Setrika"><span class="step-icon">👔</span><span class="step-name">${picSet}</span></div>
+              <span class="arrow">➔</span>
+              <div class="step" title="Packing"><span class="step-icon">🛍️</span><span class="step-name">${picPack}</span></div>
             </div>
           `;
           document.getElementById('col-' + status).appendChild(card);
