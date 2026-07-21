@@ -3,76 +3,45 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Kanban Dashboard - Homie Laundry</title>
+  <title>Laporan Operasional - Homie Laundry</title>
   <style>
     body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; background-color: #f7f7f5; color: #37352f; padding: 20px; margin: 0; }
-    .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; max-width: 1200px; margin-left: auto; margin-right: auto; }
+    .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; max-width: 600px; margin-left: auto; margin-right: auto; }
     h2 { font-weight: 600; color: #2eaadc; margin: 0; }
     .btn-back { text-decoration: none; color: #787774; background: #fff; padding: 8px 15px; border-radius: 6px; border: 1px solid #e1e1e1; font-size: 14px; font-weight: 500; }
     
-    .board { display: flex; overflow-x: auto; padding-bottom: 20px; gap: 15px; max-width: 1200px; margin: 0 auto; min-height: 70vh; }
-    .column { background: #f0f0f0; border-radius: 8px; width: 280px; min-width: 280px; padding: 15px; display: flex; flex-direction: column; }
-    .col-header { font-weight: 600; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid #e1e1e1; display: flex; justify-content: space-between; }
-    .count { background: #e1e1e1; color: #555; padding: 2px 8px; border-radius: 20px; font-size: 12px; }
+    .date-subtitle { text-align: left; color: #787774; font-size: 14px; margin-top: 0; margin-bottom: 25px; font-weight: 500; max-width: 600px; margin-left: auto; margin-right: auto; }
+
+    .report-container { max-width: 600px; margin: 0 auto; padding-bottom: 30px; display: flex; flex-direction: column; gap: 15px; }
     
-    .card { background: #fff; padding: 15px; border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 10px; border-left: 4px solid #2eaadc; }
-    .card-id { font-size: 12px; color: #787774; margin-bottom: 8px; }
+    .card { background: #fff; padding: 15px; border-radius: 6px; box-shadow: 0 2px 5px rgba(0,0,0,0.06); border-left: 4px solid #2eaadc; }
+    .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+    .card-id { font-size: 12px; color: #787774; }
+    .card-status { font-size: 11px; font-weight: bold; background: #e5f4fa; color: #007bc0; padding: 4px 8px; border-radius: 12px; }
+    
     .card-name { font-weight: 600; margin: 0; font-size: 16px; }
     .card-details { font-size: 12px; color: #555; }
     
     .name-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
-    .timeline { display: flex; align-items: flex-start; gap: 4px; font-size: 11px; color: #787774; border-top: 1px dashed #eee; padding-top: 10px; overflow-x: auto; }
+    .timeline { display: flex; align-items: flex-start; justify-content: space-between; gap: 4px; font-size: 11px; color: #787774; border-top: 1px dashed #eee; padding-top: 10px; overflow-x: auto; }
     .step { display: flex; flex-direction: column; align-items: center; min-width: 40px; }
     .step-icon { font-size: 14px; margin-bottom: 2px; }
     .step-name { font-weight: normal; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 45px; }
     .arrow { color: #ccc; padding-top: 2px; font-size: 10px; }
-    
-    /* Specific Colors */
-    .col-cuci { border-color: #2eaadc; }
-    .col-kering { border-color: #f59f00; }
-    .col-setrika { border-color: #e03131; }
-    .col-packing { border-color: #9c36b5; }
-    .col-kurir { border-color: #0ca678; }
 
     #loading { text-align: center; margin-top: 50px; color: #787774; }
   </style>
 </head>
 <body>
   <div class="header">
-    <h2>Laporan Operasional (Kanban)</h2>
-    <a href="admin.html" class="btn-back">Kembali ke Admin</a>
+    <h2>Laporan Operasional</h2>
+    <a href="admin.html" class="btn-back">Kembali</a>
   </div>
+  <p class="date-subtitle" id="current-date"></p>
 
   <div id="loading">Memuat data dari database...</div>
 
-  <div class="board" id="kanban-board" style="display: none;">
-    
-    <div class="column">
-      <div class="col-header col-cuci"><span>Menunggu Cuci</span><span class="count" id="count-cuci">0</span></div>
-      <div id="col-Menunggu Cuci"></div>
-    </div>
-    
-    <div class="column">
-      <div class="col-header col-kering"><span>Menunggu Pengeringan</span><span class="count" id="count-kering">0</span></div>
-      <div id="col-Menunggu Pengeringan"></div>
-    </div>
-    
-    <div class="column">
-      <div class="col-header col-setrika"><span>Menunggu Setrika</span><span class="count" id="count-setrika">0</span></div>
-      <div id="col-Menunggu Setrika"></div>
-    </div>
-    
-    <div class="column">
-      <div class="col-header col-packing"><span>Menunggu Packing</span><span class="count" id="count-packing">0</span></div>
-      <div id="col-Menunggu Packing"></div>
-    </div>
-    
-    <div class="column">
-      <div class="col-header col-kurir"><span>Siap Diambil/Kirim</span><span class="count" id="count-kurir">0</span></div>
-      <div id="col-Siap Diambil/Dikirim"></div>
-    </div>
-
-  </div>
+  <div class="report-container" id="report-list" style="display: none;"></div>
 
   <script>
     const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwmVsqTzRc1kHwbjarDIU7p_ghxPiDgVHBM_Bds1p-4FYEOWrL1s1wkLriH-x4TD_M56A/exec";
@@ -80,6 +49,10 @@
     if (localStorage.getItem('homie_role') !== 'Admin') {
       window.location.href = "index.html";
     }
+
+    // Set tanggal hari ini
+    const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+    document.getElementById('current-date').textContent = new Date().toLocaleDateString('id-ID', options);
 
     function loadData() {
       fetch(APPS_SCRIPT_URL, {
@@ -90,10 +63,10 @@
       .then(res => res.json())
       .then(res => {
         document.getElementById('loading').style.display = 'none';
-        document.getElementById('kanban-board').style.display = 'flex';
+        document.getElementById('report-list').style.display = 'flex';
         
         if (res.status === 'success') {
-          renderKanban(res.data);
+          renderList(res.data);
         } else {
           alert(res.message);
         }
@@ -103,59 +76,54 @@
       });
     }
 
-    function renderKanban(orders) {
-      // Clear columns
-      const cols = ["Menunggu Cuci", "Menunggu Pengeringan", "Menunggu Setrika", "Menunggu Packing", "Siap Diambil/Dikirim"];
-      cols.forEach(c => document.getElementById('col-' + c).innerHTML = "");
-      
-      let counts = { "Menunggu Cuci":0, "Menunggu Pengeringan":0, "Menunggu Setrika":0, "Menunggu Packing":0, "Siap Diambil/Dikirim":0 };
+    function renderList(orders) {
+      const container = document.getElementById('report-list');
+      container.innerHTML = "";
 
-      orders.forEach(order => {
-        const status = order["Status Terakhir"];
-        if (cols.includes(status)) {
-          const card = document.createElement('div');
-          card.className = 'card';
-          
-          const jmlPcs = order["Jumlah pakaian"] || order["Jumlah Pakaian"] || 0;
-          const picTbg = order["Timbang"] || "-";
-          const picCuci = order["Cuci"] || "-";
-          const picKering = order["Pengeringan"] || "-";
-          const picSet = order["Setrika"] || "-";
-          const picPack = order["Packing"] || "-";
+      // Dibalik agar pesanan terbaru (baris paling bawah di Sheet) muncul paling atas
+      orders.reverse().forEach(order => {
+        const card = document.createElement('div');
+        card.className = 'card';
+        
+        const jmlPcs = order["Jumlah pakaian"] || order["Jumlah Pakaian"] || 0;
+        const picTbg = order["Timbang"] || "-";
+        const picCuci = order["Cuci"] || "-";
+        const picKering = order["Pengeringan"] || "-";
+        const picSet = order["Setrika"] || "-";
+        const picPack = order["Packing"] || "-";
+        const picKurir = order["Kurir"] || "-";
+        const statusTxt = order["Status Terakhir"] || "-";
 
-          card.innerHTML = `
+        card.innerHTML = `
+          <div class="card-header">
             <div class="card-id">${order["Order ID"] || "-"}</div>
-            
-            <div class="name-row">
-              <p class="card-name">${order["Nama Pelanggan"] || "-"}</p>
-              <div class="card-details">
-                <span>⚖️ ${order["Berat"] || 0} Kg</span> &nbsp;&nbsp;
-                <span>👕 ${jmlPcs} Pcs</span>
-              </div>
+            <div class="card-status">${statusTxt}</div>
+          </div>
+          
+          <div class="name-row">
+            <p class="card-name">${order["Nama Pelanggan"] || "-"}</p>
+            <div class="card-details">
+              <span title="Berat">⚖️ ${order["Berat"] || 0} Kg</span> &nbsp;&nbsp;
+              <span title="Jumlah Pakaian">👕 ${jmlPcs} Pcs</span>
             </div>
-            
-            <div class="timeline">
-              <div class="step" title="Timbang"><span class="step-icon">📦</span><span class="step-name">${picTbg}</span></div>
-              <span class="arrow">➔</span>
-              <div class="step" title="Cuci"><span class="step-icon">💧</span><span class="step-name">${picCuci}</span></div>
-              <span class="arrow">➔</span>
-              <div class="step" title="Pengeringan"><span class="step-icon">🌬️</span><span class="step-name">${picKering}</span></div>
-              <span class="arrow">➔</span>
-              <div class="step" title="Setrika"><span class="step-icon">👔</span><span class="step-name">${picSet}</span></div>
-              <span class="arrow">➔</span>
-              <div class="step" title="Packing"><span class="step-icon">🛍️</span><span class="step-name">${picPack}</span></div>
-            </div>
-          `;
-          document.getElementById('col-' + status).appendChild(card);
-          counts[status]++;
-        }
+          </div>
+          
+          <div class="timeline">
+            <div class="step" title="Timbang"><span class="step-icon">⚖️</span><span class="step-name">${picTbg}</span></div>
+            <span class="arrow">➔</span>
+            <div class="step" title="Cuci"><span class="step-icon">💧</span><span class="step-name">${picCuci}</span></div>
+            <span class="arrow">➔</span>
+            <div class="step" title="Pengeringan"><span class="step-icon">🌬️</span><span class="step-name">${picKering}</span></div>
+            <span class="arrow">➔</span>
+            <div class="step" title="Setrika"><span class="step-icon">👔</span><span class="step-name">${picSet}</span></div>
+            <span class="arrow">➔</span>
+            <div class="step" title="Packing"><span class="step-icon">📦</span><span class="step-name">${picPack}</span></div>
+            <span class="arrow">➔</span>
+            <div class="step" title="Kurir"><span class="step-icon">🛵</span><span class="step-name">${picKurir}</span></div>
+          </div>
+        `;
+        container.appendChild(card);
       });
-
-      document.getElementById('count-cuci').textContent = counts["Menunggu Cuci"];
-      document.getElementById('count-kering').textContent = counts["Menunggu Pengeringan"];
-      document.getElementById('count-setrika').textContent = counts["Menunggu Setrika"];
-      document.getElementById('count-packing').textContent = counts["Menunggu Packing"];
-      document.getElementById('count-kurir').textContent = counts["Siap Diambil/Dikirim"];
     }
 
     loadData();
