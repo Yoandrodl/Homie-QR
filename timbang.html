@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Timbang - Homie Laundry</title>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; background-color: #f7f7f5; color: #37352f; padding: 20px; max-width: 400px; margin: 0 auto; }
+    .card { background-color: #ffffff; padding: 20px; border-radius: 8px; border: 1px solid #e1e1e1; margin-bottom: 20px; }
+    h2 { font-weight: 600; text-align: center; margin-top: 0; color: #2eaadc; }
+    p.subtitle { text-align: center; color: #787774; font-size: 14px; margin-bottom: 20px; }
+    .form-group { margin-bottom: 15px; }
+    label { display: block; margin-bottom: 5px; font-weight: 500; font-size: 14px; }
+    input { width: 100%; padding: 12px; border: 1px solid #e1e1e1; border-radius: 6px; font-size: 16px; box-sizing: border-box; background-color: #fcfcfc; }
+    input:focus { outline: none; border-color: #2eaadc; }
+    .btn { width: 100%; padding: 12px; border-radius: 6px; font-size: 16px; font-weight: 600; cursor: pointer; border: none; background-color: #2eaadc; color: white; margin-top: 10px; }
+    .btn:disabled { background-color: #a8d5e8; cursor: not-allowed; }
+    
+    #result-box { display: none; text-align: center; }
+    #qr-code { margin: 20px auto; padding: 10px; background: white; border: 1px solid #eee; display: inline-block; }
+    .order-id { font-size: 24px; font-weight: bold; color: #37352f; letter-spacing: 1px; }
+    .btn-secondary { background-color: #f7f7f5; color: #37352f; border: 1px solid #e1e1e1; }
+    
+    .nav { display: flex; justify-content: space-between; margin-bottom: 20px; align-items: center; }
+    .back-btn { text-decoration: none; color: #787774; font-size: 14px; }
+    .user-badge { background-color: #ebf5ed; color: #216e4e; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; border: 1px solid #c3e2cc; }
+  </style>
+</head>
+<body>
+  <div class="nav">
+    <a href="#" id="back-link" class="back-btn">← Kembali</a>
+    <span class="user-badge" id="user-badge">PIC</span>
+  </div>
+
+  <div class="card" id="form-card">
+    <h2>Stasiun Timbang</h2>
+    <p class="subtitle">Masukkan detail pesanan baru.</p>
+    
+    <div class="form-group">
+      <label>Nama Pelanggan</label>
+      <input type="text" id="custName" placeholder="Contoh: Budi Santoso">
+    </div>
+    <div class="form-group">
+      <label>Berat (Kg)</label>
+      <input type="number" step="0.1" id="weight" placeholder="Contoh: 3.5">
+    </div>
+    <div class="form-group">
+      <label>Jumlah Pakaian (Pcs)</label>
+      <input type="number" id="itemsCount" placeholder="Contoh: 15">
+    </div>
+    
+    <button id="submit-btn" class="btn">Buat Pesanan & Buat QR</button>
+  </div>
+
+  <div class="card" id="result-box">
+    <h3 style="color: #216e4e; margin-top:0;">Pesanan Berhasil!</h3>
+    <p>Order ID:</p>
+    <div class="order-id" id="display-order-id"></div>
+    <div id="qr-code"></div>
+    <button id="print-btn" class="btn">Print Struk / QR</button>
+    <button id="new-btn" class="btn btn-secondary" style="margin-top: 10px;">Buat Pesanan Lain</button>
+  </div>
+
+  <script>
+    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxFT2c2CT0ctNu_4mNIMLAd57MYA2EeSSUBcM0OvkEnpgxIuuTMdEStpyznjuT0AiNuVg/exec";
+    
+    const role = localStorage.getItem('homie_role');
+    const picName = localStorage.getItem('homie_name');
+
+    if (!role || (role !== 'Timbang' && role !== 'Admin')) {
+      window.location.href = "index.html";
+    }
+
+    document.getElementById('user-badge').textContent = picName + " (Timbang)";
+    
+    document.getElementById('back-link').addEventListener('click', (e) => {
+      e.preventDefault();
+      if (role === 'Admin') window.location.href = "admin.html";
+      else { localStorage.clear(); window.location.href = "index.html"; }
+    });
+
+    document.getElementById('submit-btn').addEventListener('click', () => {
+      const custName = document.getElementById('custName').value.trim();
+      const weight = document.getElementById('weight').value.trim();
+      const itemsCount = document.getElementById('itemsCount').value.trim();
+      const btn = document.getElementById('submit-btn');
+
+      if (!custName || !weight || !itemsCount) {
+        alert("Harap lengkapi semua data!");
+        return;
+      }
+
+      btn.textContent = "Menyimpan...";
+      btn.disabled = true;
+
+      fetch(APPS_SCRIPT_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ 
+          action: 'create_order', 
+          customerName: custName, 
+          weight: weight,
+          itemsCount: itemsCount,
+          picName: picName
+        })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.status === 'success') {
+          document.getElementById('form-card').style.display = 'none';
+          document.getElementById('result-box').style.display = 'block';
+          document.getElementById('display-order-id').textContent = data.orderId;
+          
+          // Generate QR
+          const qr = qrcode(0, 'M');
+          qr.addData(data.orderId);
+          qr.make();
+          document.getElementById('qr-code').innerHTML = qr.createImgTag(6, 0);
+        } else {
+          alert(data.message);
+          btn.textContent = "Buat Pesanan & Buat QR";
+          btn.disabled = false;
+        }
+      })
+      .catch(err => {
+        alert("Gagal terhubung ke database.");
+        btn.textContent = "Buat Pesanan & Buat QR";
+        btn.disabled = false;
+      });
+    });
+
+    document.getElementById('print-btn').addEventListener('click', () => {
+      window.print();
+    });
+
+    document.getElementById('new-btn').addEventListener('click', () => {
+      document.getElementById('custName').value = "";
+      document.getElementById('weight').value = "";
+      document.getElementById('itemsCount').value = "";
+      document.getElementById('submit-btn').textContent = "Buat Pesanan & Buat QR";
+      document.getElementById('submit-btn').disabled = false;
+      document.getElementById('form-card').style.display = 'block';
+      document.getElementById('result-box').style.display = 'none';
+    });
+  </script>
+</body>
+</html>

@@ -3,146 +3,104 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Homie Laundry - Scanner</title>
-  <script src="https://unpkg.com/html5-qrcode"></script>
+  <title>Login - Homie Laundry</title>
   <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; background-color: #ffffff; color: #37352f; padding: 20px; max-width: 500px; margin: 0 auto; }
-    h2 { font-weight: 600; text-align: center; margin-bottom: 5px; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; background-color: #f7f7f5; color: #37352f; padding: 20px; max-width: 400px; margin: 40px auto; }
+    .card { background-color: #ffffff; padding: 30px 20px; border-radius: 8px; border: 1px solid #e1e1e1; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+    h2 { font-weight: 600; text-align: center; margin-top: 0; margin-bottom: 5px; color: #2eaadc; }
     p.subtitle { text-align: center; color: #787774; font-size: 14px; margin-bottom: 25px; }
     .form-group { margin-bottom: 15px; }
-    select, input { width: 100%; padding: 12px; border: 1px solid #e1e1e1; border-radius: 6px; font-size: 16px; box-sizing: border-box; background-color: #f7f7f5; }
-    select:focus, input:focus { outline: none; border-color: #2eaadc; }
-    
-    /* Perkecil ukuran kotak scanner */
-    #reader { width: 100%; max-width: 300px; margin: 0 auto 15px auto; border-radius: 8px; overflow: hidden; border: 1px solid #e1e1e1; }
-    
-    /* Desain UI Konfirmasi setelah scan */
-    #scan-result { display: none; text-align: center; margin-bottom: 15px; padding: 20px; border: 1px solid #e1e1e1; border-radius: 8px; background-color: #fcfcfc; }
-    #scan-result p { margin-top: 0; margin-bottom: 15px; font-size: 16px; color: #37352f; }
-    #scanned-id { font-size: 18px; font-weight: 700; color: #2eaadc; word-break: break-all; }
-    .btn-action { width: 100%; padding: 12px 20px; border-radius: 6px; font-size: 16px; font-weight: 600; cursor: pointer; border: none; margin-bottom: 10px; }
-    .btn-save { background-color: #2eaadc; color: white; }
-    .btn-cancel { background-color: #f7f7f5; color: #37352f; border: 1px solid #e1e1e1; }
-
-    #status-box { padding: 15px; border-radius: 6px; text-align: center; font-weight: 500; display: none; margin-top: 15px; }
-    .success { background-color: #ebf5ed; color: #216e4e; border: 1px solid #c3e2cc; }
-    .error { background-color: #fbe4e4; color: #c92a2a; border: 1px solid #f4c3c3; }
-    .loading { background-color: #e5f4fa; color: #007bc0; border: 1px solid #bce1f4; }
+    label { display: block; margin-bottom: 5px; font-weight: 500; font-size: 14px; }
+    input { width: 100%; padding: 12px; border: 1px solid #e1e1e1; border-radius: 6px; font-size: 16px; box-sizing: border-box; background-color: #fcfcfc; }
+    input:focus { outline: none; border-color: #2eaadc; }
+    .btn { width: 100%; padding: 12px; border-radius: 6px; font-size: 16px; font-weight: 600; cursor: pointer; border: none; background-color: #2eaadc; color: white; margin-top: 10px; }
+    .btn:disabled { background-color: #a8d5e8; cursor: not-allowed; }
+    .error-msg { color: #c92a2a; font-size: 14px; text-align: center; margin-top: 10px; display: none; }
+    .customer-link { display: block; text-align: center; margin-top: 20px; font-size: 14px; color: #787774; text-decoration: none; }
+    .customer-link:hover { text-decoration: underline; }
   </style>
 </head>
 <body>
-  <h2>Station Update</h2>
-  <p class="subtitle">Pilih stasiun kerja dan nama Anda sebelum scan pesanan.</p>
-  <div class="form-group">
-    <select id="station">
-      <option value="Mulai Mencuci">Mulai Mencuci</option>
-      <option value="Selesai Mencuci">Selesai Mencuci</option>
-      <option value="Mulai Menyetrika">Mulai Menyetrika</option>
-      <option value="Selesai/Packing">Selesai/Packing</option>
-    </select>
-  </div>
-  <div class="form-group">
-    <input type="text" id="picName" placeholder="Nama Anda (Misal: Hasan)">
-  </div>
-  
-  <div id="reader"></div>
-  
-  <div id="scan-result">
-    <p>Hasil Scan:<br><strong id="scanned-id"></strong></p>
-    <button id="save-btn" class="btn-action btn-save">Simpan Data</button>
-    <button id="cancel-btn" class="btn-action btn-cancel">Batal & Scan Ulang</button>
+  <div class="card">
+    <h2>Homie Laundry</h2>
+    <p class="subtitle">Masuk ke Sistem Manajemen</p>
+    
+    <div class="form-group">
+      <label>Username</label>
+      <input type="text" id="username" placeholder="Masukkan username">
+    </div>
+    <div class="form-group">
+      <label>Password</label>
+      <input type="password" id="password" placeholder="Masukkan password">
+    </div>
+    
+    <button id="login-btn" class="btn">Login</button>
+    <div id="error-msg" class="error-msg"></div>
   </div>
 
-  <div id="status-box"></div>
+  <a href="lacak.html" class="customer-link">Bukan karyawan? Lacak pesanan Anda di sini.</a>
 
   <script>
-    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxFT2c2CT0ctNu_4mNIMLAd57MYA2EeSSUBcM0OvkEnpgxIuuTMdEStpyznjuT0AiNuVg/exec"; 
-    let isProcessing = false;
-    let currentScannedText = "";
-    let html5QrCode;
+    // URL WEB APP ANDA
+    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxFT2c2CT0ctNu_4mNIMLAd57MYA2EeSSUBcM0OvkEnpgxIuuTMdEStpyznjuT0AiNuVg/exec";
 
-    function showStatus(message, type) {
-      const box = document.getElementById('status-box');
-      box.textContent = message;
-      box.className = type;
-      box.style.display = 'block';
+    // Cek jika sudah login
+    if (localStorage.getItem('homie_role')) {
+      redirectUser(localStorage.getItem('homie_role'));
     }
 
-    function onScanSuccess(decodedText, decodedResult) {
-      if (isProcessing) return;
-      
-      const picName = document.getElementById('picName').value;
-      if (!picName) {
-        showStatus("Nama PIC harus diisi terlebih dahulu!", "error");
-        setTimeout(() => { document.getElementById('status-box').style.display = 'none'; }, 3000);
+    document.getElementById('login-btn').addEventListener('click', () => {
+      const user = document.getElementById('username').value.trim();
+      const pass = document.getElementById('password').value.trim();
+      const errBox = document.getElementById('error-msg');
+      const btn = document.getElementById('login-btn');
+
+      if (!user || !pass) {
+        errBox.textContent = "Username dan Password wajib diisi!";
+        errBox.style.display = 'block';
         return;
       }
 
-      isProcessing = true; // Kunci scanner agar tidak scan berulang kali
-      currentScannedText = decodedText;
-      
-      // Sembunyikan kamera, tampilkan UI Konfirmasi
-      document.getElementById('scanned-id').textContent = decodedText;
-      document.getElementById('reader').style.display = 'none';
-      document.getElementById('scan-result').style.display = 'block';
-      document.getElementById('status-box').style.display = 'none';
-    }
-
-    // Aksi Tombol Simpan
-    document.getElementById('save-btn').addEventListener('click', () => {
-      const station = document.getElementById('station').value;
-      const picName = document.getElementById('picName').value;
-
-      showStatus("Mengirim data ke database...", "loading");
-      document.getElementById('save-btn').disabled = true;
-      document.getElementById('cancel-btn').disabled = true;
+      errBox.style.display = 'none';
+      btn.textContent = "Memeriksa...";
+      btn.disabled = true;
 
       fetch(APPS_SCRIPT_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({ qrText: currentScannedText, station: station, picName: picName })
+        body: JSON.stringify({ action: 'login', username: user, password: pass })
       })
-      .then(response => response.json())
+      .then(res => res.json())
       .then(data => {
-        if (data.status === "success") { 
-          showStatus(data.message + " (" + currentScannedText + ")", "success"); 
-        } else { 
-          showStatus(data.message, "error"); 
+        if (data.status === 'success') {
+          // Simpan data login di HP
+          localStorage.setItem('homie_name', data.user.name);
+          localStorage.setItem('homie_role', data.user.role);
+          redirectUser(data.user.role);
+        } else {
+          errBox.textContent = data.message;
+          errBox.style.display = 'block';
+          btn.textContent = "Login";
+          btn.disabled = false;
         }
-        setTimeout(() => { resetScanner(); }, 3000);
       })
-      .catch(error => {
-        showStatus("Koneksi gagal. Coba lagi.", "error");
-        document.getElementById('save-btn').disabled = false;
-        document.getElementById('cancel-btn').disabled = false;
+      .catch(err => {
+        errBox.textContent = "Koneksi gagal. Periksa internet atau URL Anda.";
+        errBox.style.display = 'block';
+        btn.textContent = "Login";
+        btn.disabled = false;
       });
     });
 
-    // Aksi Tombol Batal
-    document.getElementById('cancel-btn').addEventListener('click', () => {
-      resetScanner();
-    });
-
-    function resetScanner() {
-      currentScannedText = "";
-      isProcessing = false;
-      document.getElementById('scan-result').style.display = 'none';
-      document.getElementById('status-box').style.display = 'none';
-      document.getElementById('reader').style.display = 'block';
-      document.getElementById('save-btn').disabled = false;
-      document.getElementById('cancel-btn').disabled = false;
+    function redirectUser(role) {
+      if (role === 'Admin') {
+        window.location.href = "admin.html";
+      } else if (role === 'Timbang') {
+        window.location.href = "timbang.html";
+      } else {
+        window.location.href = "scanner.html";
+      }
     }
-
-    // Inisialisasi Kamera
-    html5QrCode = new Html5Qrcode("reader");
-    html5QrCode.start(
-      { facingMode: "environment" },
-      { fps: 10, qrbox: { width: 250, height: 250 } },
-      onScanSuccess
-    ).catch(err => {
-      showStatus("Akses kamera ditolak atau kamera belakang tidak ditemukan.", "error");
-      console.error(err);
-    });
   </script>
 </body>
 </html>

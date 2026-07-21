@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Scanner - Homie Laundry</title>
+  <script src="https://unpkg.com/html5-qrcode"></script>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; background-color: #f7f7f5; color: #37352f; padding: 20px; max-width: 400px; margin: 0 auto; }
+    h2 { font-weight: 600; text-align: center; margin-top: 0; margin-bottom: 5px; color: #2eaadc; }
+    p.subtitle { text-align: center; color: #787774; font-size: 14px; margin-bottom: 25px; }
+    
+    .nav { display: flex; justify-content: space-between; margin-bottom: 20px; align-items: center; }
+    .back-btn { text-decoration: none; color: #787774; font-size: 14px; background: #fff; padding: 5px 10px; border-radius: 6px; border: 1px solid #e1e1e1; }
+    .user-badge { background-color: #e5f4fa; color: #007bc0; padding: 6px 12px; border-radius: 20px; font-size: 13px; font-weight: 600; border: 1px solid #bce1f4; }
+    
+    #reader { width: 100%; max-width: 300px; margin: 0 auto 15px auto; border-radius: 8px; overflow: hidden; border: 1px solid #e1e1e1; background: #000; }
+    
+    #scan-result { display: none; text-align: center; margin-bottom: 15px; padding: 20px; border: 1px solid #e1e1e1; border-radius: 8px; background-color: #ffffff; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+    #scan-result p { margin-top: 0; margin-bottom: 15px; font-size: 16px; color: #37352f; }
+    #scanned-id { font-size: 20px; font-weight: 700; color: #2eaadc; word-break: break-all; }
+    .btn-action { width: 100%; padding: 12px 20px; border-radius: 6px; font-size: 16px; font-weight: 600; cursor: pointer; border: none; margin-bottom: 10px; }
+    .btn-save { background-color: #2eaadc; color: white; }
+    .btn-cancel { background-color: #f7f7f5; color: #37352f; border: 1px solid #e1e1e1; }
+
+    #status-box { padding: 15px; border-radius: 6px; text-align: center; font-weight: 500; display: none; margin-top: 15px; }
+    .success { background-color: #ebf5ed; color: #216e4e; border: 1px solid #c3e2cc; }
+    .error { background-color: #fbe4e4; color: #c92a2a; border: 1px solid #f4c3c3; }
+    .loading { background-color: #e5f4fa; color: #007bc0; border: 1px solid #bce1f4; }
+  </style>
+</head>
+<body>
+  <div class="nav">
+    <a href="#" id="back-link" class="back-btn">Keluar</a>
+    <span class="user-badge" id="user-badge">Memuat...</span>
+  </div>
+
+  <h2>Stasiun <span id="station-name">...</span></h2>
+  <p class="subtitle">Arahkan kamera ke QR Code pesanan.</p>
+  
+  <div id="reader"></div>
+  
+  <div id="scan-result">
+    <p>ID Pesanan:<br><strong id="scanned-id"></strong></p>
+    <button id="save-btn" class="btn-action btn-save">Selesaikan Proses Ini</button>
+    <button id="cancel-btn" class="btn-action btn-cancel">Batal & Scan Ulang</button>
+  </div>
+
+  <div id="status-box"></div>
+
+  <script>
+    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxFT2c2CT0ctNu_4mNIMLAd57MYA2EeSSUBcM0OvkEnpgxIuuTMdEStpyznjuT0AiNuVg/exec"; 
+    
+    const baseRole = localStorage.getItem('homie_role');
+    const picName = localStorage.getItem('homie_name');
+    const tempRole = localStorage.getItem('homie_temp_role');
+    
+    // Tentukan role mana yang sedang aktif (Admin bisa ganti-ganti)
+    const activeRole = (baseRole === 'Admin' && tempRole) ? tempRole : baseRole;
+
+    if (!baseRole) {
+      window.location.href = "index.html";
+    }
+
+    document.getElementById('station-name').textContent = activeRole;
+    document.getElementById('user-badge').textContent = picName + " (" + activeRole + ")";
+
+    document.getElementById('back-link').addEventListener('click', (e) => {
+      e.preventDefault();
+      if (baseRole === 'Admin') {
+        localStorage.removeItem('homie_temp_role');
+        window.location.href = "admin.html";
+      } else {
+        localStorage.clear();
+        window.location.href = "index.html";
+      }
+    });
+
+    let isProcessing = false;
+    let currentScannedText = "";
+    let html5QrCode;
+
+    function showStatus(message, type) {
+      const box = document.getElementById('status-box');
+      box.textContent = message;
+      box.className = type;
+      box.style.display = 'block';
+    }
+
+    function onScanSuccess(decodedText, decodedResult) {
+      if (isProcessing) return;
+      isProcessing = true; 
+      currentScannedText = decodedText;
+      
+      document.getElementById('scanned-id').textContent = decodedText;
+      document.getElementById('reader').style.display = 'none';
+      document.getElementById('scan-result').style.display = 'block';
+      document.getElementById('status-box').style.display = 'none';
+    }
+
+    document.getElementById('save-btn').addEventListener('click', () => {
+      showStatus("Menyimpan ke database...", "loading");
+      document.getElementById('save-btn').disabled = true;
+      document.getElementById('cancel-btn').disabled = true;
+
+      fetch(APPS_SCRIPT_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ 
+          action: 'scan_process', 
+          qrText: currentScannedText, 
+          role: activeRole, 
+          picName: picName 
+        })
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.status === "success") { 
+          showStatus(data.message, "success"); 
+        } else { 
+          showStatus(data.message, "error"); 
+        }
+        setTimeout(() => { resetScanner(); }, 2000);
+      })
+      .catch(error => {
+        showStatus("Koneksi gagal. Coba lagi.", "error");
+        document.getElementById('save-btn').disabled = false;
+        document.getElementById('cancel-btn').disabled = false;
+      });
+    });
+
+    document.getElementById('cancel-btn').addEventListener('click', () => {
+      resetScanner();
+    });
+
+    function resetScanner() {
+      currentScannedText = "";
+      isProcessing = false;
+      document.getElementById('scan-result').style.display = 'none';
+      document.getElementById('status-box').style.display = 'none';
+      document.getElementById('reader').style.display = 'block';
+      document.getElementById('save-btn').disabled = false;
+      document.getElementById('cancel-btn').disabled = false;
+    }
+
+    html5QrCode = new Html5Qrcode("reader");
+    html5QrCode.start(
+      { facingMode: "environment" },
+      { fps: 10, qrbox: { width: 250, height: 250 } },
+      onScanSuccess
+    ).catch(err => {
+      showStatus("Akses kamera ditolak atau kamera belakang tidak ditemukan.", "error");
+      console.error(err);
+    });
+  </script>
+</body>
+</html>
