@@ -64,6 +64,7 @@ input:focus {
 /* Buttons */
 .btn { 
   width: 100%; 
+  box-sizing: border-box; 
   padding: 14px; 
   border-radius: 50px; 
   font-size: 15px; 

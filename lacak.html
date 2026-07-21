@@ -71,8 +71,9 @@
       .then(data => {
         if (data.status === 'success') {
           const order = data.data;
+          const jmlPcs = order["Jumlah pakaian"] || order["Jumlah Pakaian"] || 0;
           document.getElementById('res-name').textContent = order["Nama Pelanggan"];
-          document.getElementById('res-detail').textContent = order["Berat"] + " Kg (" + order["Jumlah Pakaian"] + " Pcs)";
+          document.getElementById('res-detail').textContent = order["Berat"] + " Kg (" + jmlPcs + " Pcs)";
           document.getElementById('res-status').textContent = order["Status Terakhir"];
           resBox.style.display = 'block';
         } else {

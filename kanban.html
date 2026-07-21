@@ -53,7 +53,15 @@
       <a href="#" onclick="history.back(); return false;" class="btn-header">Kembali</a>
     </div>
     <p class="date-subtitle" id="current-date"></p>
-
+    
+    <div class="card" style="padding: 15px; margin-bottom: 25px;">
+      <label style="margin-bottom: 10px; font-size: 13px;">Pilih Tanggal Laporan:</label>
+      <div style="display: flex; gap: 10px; align-items: center;">
+        <input type="date" id="filter-date" style="padding: 10px; border-radius: 8px; flex: 1; margin: 0;">
+        <button id="btn-filter" class="btn" style="width: auto; margin: 0; padding: 10px 20px;">Cari</button>
+        <button id="btn-reset" class="btn btn-secondary" style="width: auto; margin: 0; padding: 10px 20px;">Semua</button>
+      </div>
+    </div>
     <div id="loading" class="text-center" style="margin-top: 50px; color: #888;">Memuat data dari database...</div>
 
     <div class="report-container" id="report-list" style="display: none;"></div>
@@ -82,6 +90,8 @@
     const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
     document.getElementById('current-date').textContent = new Date().toLocaleDateString('id-ID', options);
 
+    let allOrders = [];
+
     function loadData() {
       fetch(APPS_SCRIPT_URL, {
         method: 'POST',
@@ -94,7 +104,8 @@
         document.getElementById('report-list').style.display = 'flex';
         
         if (res.status === 'success') {
-          renderList(res.data);
+          allOrders = res.data;
+          renderList(allOrders);
         } else {
           alert(res.message);
         }
@@ -167,6 +178,28 @@
     function closeModal() {
       document.getElementById('qr-modal').style.display = 'none';
     }
+
+    document.getElementById('btn-filter').addEventListener('click', () => {
+      const dateVal = document.getElementById('filter-date').value;
+      if (!dateVal) {
+        renderList(allOrders);
+        return;
+      }
+      
+      const parts = dateVal.split('-');
+      const formattedDate = `${parts[2]}/${parts[1]}/${parts[0]}`; 
+
+      const filtered = allOrders.filter(order => {
+        const tglMasuk = order["Tanggal Masuk"] || "";
+        return tglMasuk.startsWith(formattedDate);
+      });
+      renderList(filtered);
+    });
+
+    document.getElementById('btn-reset').addEventListener('click', () => {
+      document.getElementById('filter-date').value = "";
+      renderList(allOrders);
+    });
 
     loadData();
   </script>
