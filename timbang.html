@@ -65,7 +65,11 @@
       <p style="margin-bottom: 5px;">Order ID:</p>
       <div class="order-id" id="display-order-id"></div>
       <div id="qr-code"></div>
-      <button id="print-btn" class="btn" style="background: linear-gradient(135deg, #72bde6, #4a90e2); box-shadow: 0 4px 15px rgba(74, 144, 226, 0.3);">🖨️ Print Struk / QR</button>
+      <div id="manual-download-box" style="margin-top: 15px; display: none; gap: 8px; flex-direction: column;">
+        <button id="btn-manual-foto" class="btn btn-secondary" style="font-size: 13px; padding: 10px; margin-top: 0; display: none;">⬇️ Unduh Ulang Foto</button>
+        <button id="btn-manual-video" class="btn btn-secondary" style="font-size: 13px; padding: 10px; margin-top: 0; display: none;">⬇️ Unduh Ulang Video</button>
+      </div>
+      <button id="print-btn" class="btn" style="background: linear-gradient(135deg, #72bde6, #4a90e2); box-shadow: 0 4px 15px rgba(74, 144, 226, 0.3); margin-top: 15px;">🖨️ Print Struk / QR</button>
       <button id="new-btn" class="btn btn-secondary" style="margin-top: 12px;">Buat Pesanan Lain</button>
     </div>
 
@@ -230,6 +234,15 @@
     }
 
     document.getElementById('submit-btn').addEventListener('click', () => {
+      // Force stop video if they forgot to click stop
+      if (mediaRecorder && mediaRecorder.state === "recording") {
+        mediaRecorder.stop();
+        clearInterval(videoInterval);
+        document.getElementById('btn-video-stop').style.display = 'none';
+        document.getElementById('btn-video-start').style.display = 'block';
+        document.getElementById('btn-video-start').textContent = "🎥 Rekam Ulang";
+      }
+
       const custName = document.getElementById('custName').value.trim();
       const weight = document.getElementById('weight').value.trim();
       const itemsCount = document.getElementById('itemsCount').value.trim();
@@ -274,11 +287,33 @@
           const safeName = custName.replace(/[^a-zA-Z0-9 ]/g, '').trim().replace(/ /g, '_');
           const baseFilename = `[HOMIE]_${dateStr}_${safeName}_${weight}Kg_${itemsCount}Pcs`;
 
-          if (finalPhotoBlob) triggerDownload(finalPhotoBlob, `${baseFilename}_Foto.jpg`);
-          if (finalVideoBlob) triggerDownload(finalVideoBlob, `${baseFilename}_Video.${finalVideoBlob.ext || 'webm'}`);
+          let delay = 0;
+          let showManualBox = false;
+
+          if (finalPhotoBlob) {
+            triggerDownload(finalPhotoBlob, `${baseFilename}_Foto.jpg`);
+            delay = 1000;
+            
+            showManualBox = true;
+            const btnMFoto = document.getElementById('btn-manual-foto');
+            btnMFoto.style.display = 'block';
+            btnMFoto.onclick = () => triggerDownload(finalPhotoBlob, `${baseFilename}_Foto.jpg`);
+          }
           
-          finalPhotoBlob = null;
-          finalVideoBlob = null;
+          if (finalVideoBlob) {
+            setTimeout(() => {
+              triggerDownload(finalVideoBlob, `${baseFilename}_Video.${finalVideoBlob.ext || 'webm'}`);
+            }, delay);
+
+            showManualBox = true;
+            const btnMVideo = document.getElementById('btn-manual-video');
+            btnMVideo.style.display = 'block';
+            btnMVideo.onclick = () => triggerDownload(finalVideoBlob, `${baseFilename}_Video.${finalVideoBlob.ext || 'webm'}`);
+          }
+          
+          if (showManualBox) {
+            document.getElementById('manual-download-box').style.display = 'flex';
+          }
         } else {
           alert(data.message);
           btn.textContent = "Buat Pesanan & Buat QR";
