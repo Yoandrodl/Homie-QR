@@ -55,10 +55,11 @@
     <p class="date-subtitle" id="current-date"></p>
     
     <div class="card" style="padding: 15px; margin-bottom: 25px;">
-      <label style="margin-bottom: 10px; font-size: 13px;">Pilih Tanggal Laporan:</label>
+      <label style="margin-bottom: 8px; font-size: 13px;">Pencarian & Filter:</label>
+      <input type="text" id="search-input" placeholder="Cari Nama atau ID Pesanan..." style="margin-bottom: 10px; padding: 10px; border-radius: 8px; width: 100%; box-sizing: border-box; font-size: 14px;">
       <div style="display: flex; gap: 10px; align-items: center;">
         <input type="date" id="filter-date" style="padding: 10px; border-radius: 8px; flex: 1; margin: 0;">
-        <button id="btn-filter" class="btn" style="width: auto; margin: 0; padding: 10px 20px;">Cari</button>
+        <button id="btn-filter" class="btn" style="width: auto; margin: 0; padding: 10px 20px;">Terapkan</button>
         <button id="btn-reset" class="btn btn-secondary" style="width: auto; margin: 0; padding: 10px 20px;">Semua</button>
       </div>
     </div>
@@ -105,7 +106,8 @@
         
         if (res.status === 'success') {
           allOrders = res.data;
-          renderList(allOrders);
+          document.getElementById('filter-date').value = getTodayDateString();
+          applyFilters();
         } else {
           alert(res.message);
         }
@@ -179,26 +181,44 @@
       document.getElementById('qr-modal').style.display = 'none';
     }
 
-    document.getElementById('btn-filter').addEventListener('click', () => {
-      const dateVal = document.getElementById('filter-date').value;
-      if (!dateVal) {
-        renderList(allOrders);
-        return;
-      }
-      
-      const parts = dateVal.split('-');
-      const formattedDate = `${parts[2]}/${parts[1]}/${parts[0]}`; 
+    function getTodayDateString() {
+      const d = new Date();
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    }
 
-      const filtered = allOrders.filter(order => {
-        const tglMasuk = order["Tanggal Masuk"] || "";
-        return tglMasuk.startsWith(formattedDate);
-      });
+    function applyFilters() {
+      const dateVal = document.getElementById('filter-date').value;
+      const searchVal = document.getElementById('search-input').value.toLowerCase().trim();
+      
+      let filtered = allOrders;
+
+      if (dateVal) {
+        const parts = dateVal.split('-');
+        const formattedDate = `${parts[2]}/${parts[1]}/${parts[0]}`; 
+        filtered = filtered.filter(order => {
+          const tglMasuk = order["Tanggal Masuk"] || "";
+          return tglMasuk.startsWith(formattedDate);
+        });
+      }
+
+      if (searchVal) {
+        filtered = filtered.filter(order => {
+          const nama = (order["Nama Pelanggan"] || "").toLowerCase();
+          const id = (order["Order ID"] || "").toLowerCase();
+          return nama.includes(searchVal) || id.includes(searchVal);
+        });
+      }
+
       renderList(filtered);
-    });
+    }
+
+    document.getElementById('btn-filter').addEventListener('click', applyFilters);
+    document.getElementById('search-input').addEventListener('input', applyFilters);
 
     document.getElementById('btn-reset').addEventListener('click', () => {
       document.getElementById('filter-date').value = "";
-      renderList(allOrders);
+      document.getElementById('search-input').value = "";
+      applyFilters();
     });
 
     loadData();
