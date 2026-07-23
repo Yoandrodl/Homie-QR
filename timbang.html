@@ -285,7 +285,7 @@
           const months = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Ags", "Sep", "Okt", "Nov", "Des"];
           const dateStr = `${d.getDate()}${months[d.getMonth()]}${d.getFullYear()}`;
           const safeName = custName.replace(/[^a-zA-Z0-9 ]/g, '').trim().replace(/ /g, '_');
-          const baseFilename = `[HOMIE]_${dateStr}_${safeName}_${weight}Kg_${itemsCount}Pcs`;
+          const baseFilename = `HM_${dateStr}_${safeName}_${weight}Kg_${itemsCount}Pcs`;
 
           let delay = 0;
           let showManualBox = false;
