@@ -36,6 +36,26 @@
         <label>Jumlah Pakaian (Pcs)</label>
         <input type="number" id="itemsCount" placeholder="Contoh: 15">
       </div>
+
+      <div style="margin-bottom: 25px; border-top: 1px dashed rgba(0,0,0,0.1); padding-top: 15px;">
+        <label style="margin-bottom: 15px;">Dokumentasi (SOP)</label>
+        
+        <!-- Foto Timbangan -->
+        <div style="display: flex; gap: 10px; margin-bottom: 15px; align-items: center;">
+          <button id="btn-foto" class="btn btn-secondary" style="margin: 0; flex: 1;">📷 Ambil Foto Timbangan</button>
+          <img id="preview-foto" style="width: 50px; height: 50px; object-fit: cover; border-radius: 8px; border: 1px solid #ccc; display: none;">
+          <input type="file" id="input-foto" accept="image/*" capture="environment" style="display: none;">
+        </div>
+
+        <!-- Video Unboxing -->
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+          <button id="btn-video-start" class="btn btn-secondary" style="margin: 0;">🎥 Mulai Rekam Video</button>
+          <button id="btn-video-stop" class="btn" style="margin: 0; background: #c92a2a; display: none;">🛑 Berhenti Merekam</button>
+          
+          <video id="video-preview" autoplay muted playsinline style="width: 100%; max-height: 250px; object-fit: cover; border-radius: 12px; background: #000; display: none;"></video>
+          <div id="video-status" style="font-size: 12px; color: #888; text-align: center; display: none;">Status: <span id="video-timer">Menunggu...</span></div>
+        </div>
+      </div>
       
       <button id="submit-btn" class="btn">Buat Pesanan & Buat QR</button>
     </div>
@@ -69,6 +89,145 @@
       if (role === 'Admin') window.location.href = "admin.html";
       else { localStorage.clear(); window.location.href = "index.html"; }
     });
+
+    // --- FOTO LOGIC ---
+    let finalPhotoBlob = null;
+    document.getElementById('btn-foto').addEventListener('click', () => {
+      document.getElementById('input-foto').click();
+    });
+    
+    document.getElementById('input-foto').addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      
+      const reader = new FileReader();
+      reader.onload = function(event) {
+        const img = new Image();
+        img.onload = function() {
+          const canvas = document.createElement('canvas');
+          const max_size = 800;
+          let width = img.width;
+          let height = img.height;
+
+          if (width > height && width > max_size) {
+            height *= max_size / width;
+            width = max_size;
+          } else if (height > max_size) {
+            width *= max_size / height;
+            height = max_size;
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+          
+          canvas.toBlob((blob) => {
+            finalPhotoBlob = blob;
+            const url = URL.createObjectURL(blob);
+            document.getElementById('preview-foto').src = url;
+            document.getElementById('preview-foto').style.display = 'block';
+            document.getElementById('btn-foto').textContent = "📷 Foto Tersimpan (Ganti?)";
+          }, 'image/jpeg', 0.6); // 60% quality compression
+        }
+        img.src = event.target.result;
+      }
+      reader.readAsDataURL(file);
+    });
+
+    // --- VIDEO LOGIC ---
+    let mediaRecorder;
+    let recordedChunks = [];
+    let finalVideoBlob = null;
+    let videoStream = null;
+    let videoInterval;
+    let videoSeconds = 0;
+
+    const btnVideoStart = document.getElementById('btn-video-start');
+    const btnVideoStop = document.getElementById('btn-video-stop');
+    const videoPreview = document.getElementById('video-preview');
+    const videoStatus = document.getElementById('video-status');
+    const videoTimer = document.getElementById('video-timer');
+
+    btnVideoStart.addEventListener('click', async () => {
+      try {
+        videoStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment", width: 640 }, audio: true });
+        videoPreview.srcObject = videoStream;
+        videoPreview.style.display = 'block';
+        videoStatus.style.display = 'block';
+        
+        let options = { mimeType: 'video/webm;codecs=vp8,opus' };
+        if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+          options = { mimeType: 'video/webm' };
+          if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+            options = { mimeType: 'video/mp4' };
+            if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+              options = {}; // let browser decide
+            }
+          }
+        }
+        
+        mediaRecorder = new MediaRecorder(videoStream, options);
+        
+        mediaRecorder.ondataavailable = (e) => {
+          if (e.data.size > 0) recordedChunks.push(e.data);
+        };
+        
+        mediaRecorder.onstop = () => {
+          const ext = options.mimeType && options.mimeType.includes('mp4') ? 'mp4' : 'webm';
+          finalVideoBlob = new Blob(recordedChunks, { type: options.mimeType || 'video/webm' });
+          finalVideoBlob.ext = ext;
+          videoPreview.srcObject = null;
+          videoPreview.src = URL.createObjectURL(finalVideoBlob);
+          videoPreview.controls = true; 
+          videoTimer.textContent = "Selesai merekam.";
+          
+          videoStream.getTracks().forEach(track => track.stop());
+        };
+        
+        recordedChunks = [];
+        mediaRecorder.start();
+        btnVideoStart.style.display = 'none';
+        btnVideoStop.style.display = 'block';
+        
+        videoSeconds = 0;
+        videoTimer.textContent = "Merekam... 00:00";
+        videoInterval = setInterval(() => {
+          videoSeconds++;
+          const m = String(Math.floor(videoSeconds / 60)).padStart(2, '0');
+          const s = String(videoSeconds % 60).padStart(2, '0');
+          videoTimer.textContent = `Merekam... ${m}:${s}`;
+        }, 1000);
+
+      } catch (err) {
+        alert("Gagal mengakses kamera: " + err.message);
+      }
+    });
+
+    btnVideoStop.addEventListener('click', () => {
+      if (mediaRecorder && mediaRecorder.state !== "inactive") {
+        mediaRecorder.stop();
+        clearInterval(videoInterval);
+        btnVideoStop.style.display = 'none';
+        btnVideoStart.style.display = 'block';
+        btnVideoStart.textContent = "🎥 Rekam Ulang";
+      }
+    });
+
+    // --- AUTO DOWNLOAD UTILITY ---
+    function triggerDownload(blob, filename) {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.style.display = 'none';
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => {
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }, 500);
+    }
 
     document.getElementById('submit-btn').addEventListener('click', () => {
       const custName = document.getElementById('custName').value.trim();
@@ -107,6 +266,19 @@
           qr.addData(data.orderId);
           qr.make();
           document.getElementById('qr-code').innerHTML = qr.createImgTag(6, 0);
+
+          // Auto Download Documentation
+          const d = new Date();
+          const months = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Ags", "Sep", "Okt", "Nov", "Des"];
+          const dateStr = `${d.getDate()}${months[d.getMonth()]}${d.getFullYear()}`;
+          const safeName = custName.replace(/[^a-zA-Z0-9 ]/g, '').trim().replace(/ /g, '_');
+          const baseFilename = `[HOMIE]_${dateStr}_${safeName}_${weight}Kg_${itemsCount}Pcs`;
+
+          if (finalPhotoBlob) triggerDownload(finalPhotoBlob, `${baseFilename}_Foto.jpg`);
+          if (finalVideoBlob) triggerDownload(finalVideoBlob, `${baseFilename}_Video.${finalVideoBlob.ext || 'webm'}`);
+          
+          finalPhotoBlob = null;
+          finalVideoBlob = null;
         } else {
           alert(data.message);
           btn.textContent = "Buat Pesanan & Buat QR";
