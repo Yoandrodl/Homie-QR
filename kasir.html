@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kasir (POS) - Homie Laundry</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+  <style>
+    .wrapper { max-width: 600px; margin: 40px auto; padding: 0 15px; }
+    .nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
+    .card { background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(12px); border-radius: 20px; padding: 25px; box-shadow: 0 8px 32px rgba(0,0,0,0.05); margin-bottom: 20px; }
+    .form-group { margin-bottom: 15px; }
+    .form-group label { display: block; margin-bottom: 8px; font-weight: 600; color: #4a5568; font-size: 14px; }
+    .form-group input, .form-group select { width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 10px; font-size: 15px; box-sizing: border-box; background: #fff; }
+    .btn { display: block; width: 100%; padding: 14px; border: none; border-radius: 12px; font-size: 16px; font-weight: bold; cursor: pointer; text-align: center; color: white; background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%); color: #2d3748; box-shadow: 0 4px 15px rgba(0,0,0,0.05); transition: 0.3s; margin-top: 20px; }
+    .btn-secondary { background: #e2e8f0; color: #4a5568; }
+    .btn-success { background: linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%); color: #2d3748; }
+    .total-box { background: #f7fafc; padding: 15px; border-radius: 12px; margin-top: 15px; text-align: center; border: 1px dashed #cbd5e0; }
+    .total-price { font-size: 24px; font-weight: 800; color: #2d3748; margin-top: 5px; }
+    
+    /* Autocomplete styles */
+    .autocomplete { position: relative; display: inline-block; width: 100%; }
+    .autocomplete-items { position: absolute; border: 1px solid #d4d4d4; border-bottom: none; border-top: none; z-index: 99; top: 100%; left: 0; right: 0; max-height: 200px; overflow-y: auto; border-radius: 0 0 10px 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+    .autocomplete-items div { padding: 10px; cursor: pointer; background-color: #fff; border-bottom: 1px solid #d4d4d4; font-size: 14px; }
+    .autocomplete-items div:hover { background-color: #e9e9e9; }
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+    <div class="nav">
+      <h2 style="margin:0;">🛒 Kasir POS</h2>
+      <a href="admin.html" id="back-link" class="btn-header">Kembali</a>
+    </div>
+
+    <div id="loading" class="text-center" style="margin-top: 50px; color: #888;">Memuat Database Pelanggan & Harga...</div>
+
+    <div class="card" id="form-card" style="display: none;">
+      <div class="form-group autocomplete">
+        <label>Nama Pelanggan (Ketik untuk mencari)</label>
+        <input type="text" id="custName" placeholder="Contoh: Budi Santoso" autocomplete="off">
+      </div>
+      <div class="form-group">
+        <label>Nomor WhatsApp</label>
+        <input type="text" id="custWA" placeholder="Contoh: 08123456789">
+      </div>
+      
+      <div style="border-top: 1px dashed #cbd5e0; margin: 20px 0;"></div>
+
+      <div class="form-group">
+        <label>Pilih Layanan</label>
+        <select id="serviceSelect">
+          <option value="">-- Pilih Layanan --</option>
+        </select>
+      </div>
+
+      <div class="form-group" id="qtyGroup" style="display: none;">
+        <label>Jumlah (Satuan / Pcs)</label>
+        <input type="number" id="qtyInput" placeholder="1" value="1">
+      </div>
+
+      <div class="total-box">
+        <div style="font-size: 12px; color: #718096; font-weight: 600;">ESTIMASI TAGIHAN</div>
+        <div class="total-price" id="totalDisplay">Rp 0</div>
+        <div id="kiloanNote" style="font-size: 12px; color: #e53e3e; margin-top: 8px; display: none;">*Menunggu ditimbang oleh tim belakang</div>
+      </div>
+
+      <div class="form-group" style="margin-top: 20px;">
+        <label>Status Pembayaran</label>
+        <select id="paymentStatus" style="background: #fff5f5; border-color: #feb2b2;">
+          <option value="Belum Bayar">❌ Belum Bayar</option>
+          <option value="Lunas">✅ LUNAS (Bayar Sekarang)</option>
+        </select>
+      </div>
+
+      <button id="submit-btn" class="btn btn-success">🧾 Buat Pesanan & Cetak Nota</button>
+    </div>
+
+    <div class="card" id="result-box" style="display: none; text-align: center;">
+      <h3 style="color: #27ae60; margin-top:0; font-size: 22px;">Pesanan Berhasil! 🎉</h3>
+      <p style="margin-bottom: 5px;">Order ID:</p>
+      <div class="order-id" id="display-order-id" style="font-size: 24px; font-weight: bold; margin-bottom: 20px;"></div>
+      
+      <a href="#" id="wa-link" target="_blank" class="btn" style="background: #25D366; color: white; margin-bottom: 10px; text-decoration: none;">💬 Kirim Nota ke WhatsApp</a>
+      <a href="#" id="view-nota-btn" target="_blank" class="btn btn-secondary" style="margin-bottom: 10px; text-decoration: none;">📄 Buka Nota Digital</a>
+      
+      <div id="qr-code" style="margin: 20px 0; display: flex; justify-content: center;"></div>
+      
+      <button id="new-btn" class="btn btn-secondary" style="margin-top: 20px;">Buat Pesanan Lain</button>
+    </div>
+
+  </div>
+
+  <script>
+    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwmVsqTzRc1kHwbjarDIU7p_ghxPiDgVHBM_Bds1p-4FYEOWrL1s1wkLriH-x4TD_M56A/exec";
+    const picName = localStorage.getItem('homie_name') || 'Kasir';
+
+    let customersDB = [];
+    let servicesDB = [];
+    let selectedService = null;
+
+    // Load Data
+    Promise.all([
+      fetch(APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'get_customers' }) }).then(r => r.json()),
+      fetch(APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'get_services' }) }).then(r => r.json())
+    ]).then(([custRes, servRes]) => {
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('form-card').style.display = 'block';
+
+      if (custRes.status === 'success') customersDB = custRes.data;
+      if (servRes.status === 'success') {
+        servicesDB = servRes.data;
+        const select = document.getElementById('serviceSelect');
+        servicesDB.forEach((s, idx) => {
+          const opt = document.createElement('option');
+          opt.value = idx;
+          opt.textContent = `${s.nama} (${s.tipe}) - Rp ${s.harga}`;
+          select.appendChild(opt);
+        });
+      }
+      
+      autocomplete(document.getElementById("custName"), customersDB);
+    }).catch(err => {
+      document.getElementById('loading').textContent = "Gagal memuat database.";
+    });
+
+    // Handle Service Change
+    document.getElementById('serviceSelect').addEventListener('change', function(e) {
+      const idx = e.target.value;
+      if (idx === "") {
+        selectedService = null;
+        updateTotal();
+        return;
+      }
+      selectedService = servicesDB[idx];
+      
+      if (selectedService.tipe.toLowerCase() === 'satuan') {
+        document.getElementById('qtyGroup').style.display = 'block';
+        document.getElementById('kiloanNote').style.display = 'none';
+      } else {
+        document.getElementById('qtyGroup').style.display = 'none';
+        document.getElementById('kiloanNote').style.display = 'block';
+      }
+      updateTotal();
+    });
+
+    document.getElementById('qtyInput').addEventListener('input', updateTotal);
+
+    function updateTotal() {
+      if (!selectedService) {
+        document.getElementById('totalDisplay').textContent = "Rp 0";
+        return;
+      }
+      
+      if (selectedService.tipe.toLowerCase() === 'satuan') {
+        const qty = parseInt(document.getElementById('qtyInput').value) || 0;
+        const total = qty * selectedService.harga;
+        document.getElementById('totalDisplay').textContent = "Rp " + total.toLocaleString('id-ID');
+      } else {
+        document.getElementById('totalDisplay').textContent = "Rp " + selectedService.harga.toLocaleString('id-ID') + " / Kg";
+      }
+    }
+
+    // Submit Logic
+    document.getElementById('submit-btn').addEventListener('click', () => {
+      const custName = document.getElementById('custName').value.trim();
+      const custWA = document.getElementById('custWA').value.trim();
+      const payStatus = document.getElementById('paymentStatus').value;
+      
+      if (!custName || !selectedService) {
+        alert("Nama Pelanggan dan Layanan wajib diisi!");
+        return;
+      }
+
+      const isKiloan = selectedService.tipe.toLowerCase() === 'kiloan';
+      const qty = parseInt(document.getElementById('qtyInput').value) || 1;
+      const total = isKiloan ? 0 : (qty * selectedService.harga);
+      const itemsCount = isKiloan ? "" : qty;
+      const weight = isKiloan ? "" : ""; // Satuan gak ada berat
+
+      const btn = document.getElementById('submit-btn');
+      btn.textContent = "Menyimpan...";
+      btn.disabled = true;
+
+      fetch(APPS_SCRIPT_URL, {
+        method: 'POST',
+        body: JSON.stringify({ 
+          action: 'create_pos_order', 
+          customerName: custName,
+          customerWA: custWA || "-",
+          serviceName: selectedService.nama,
+          picName: picName,
+          paymentStatus: payStatus,
+          weight: weight,
+          itemsCount: itemsCount,
+          totalPrice: total,
+          isKiloan: isKiloan
+        })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.status === 'success') {
+          document.getElementById('form-card').style.display = 'none';
+          document.getElementById('result-box').style.display = 'block';
+          document.getElementById('display-order-id').textContent = data.orderId;
+          
+          // Setup Nota Link
+          const notaUrl = window.location.href.replace('kasir.html', '') + 'nota.html?id=' + data.orderId;
+          document.getElementById('view-nota-btn').href = notaUrl;
+          
+          // Setup WA Link
+          if (custWA) {
+            let waNum = custWA;
+            if (waNum.startsWith('0')) waNum = '62' + waNum.substring(1);
+            const text = `Halo Kak ${custName}, ini nota digital untuk layanan laundry di Homie Laundry Samarinda. Silakan cek detail pesanan Anda pada link berikut:\n\n${notaUrl}\n\nTerima kasih!`;
+            document.getElementById('wa-link').href = `https://wa.me/${waNum}?text=${encodeURIComponent(text)}`;
+            document.getElementById('wa-link').style.display = 'inline-block';
+          } else {
+            document.getElementById('wa-link').style.display = 'none';
+          }
+
+          // Generate QR for physical tagging
+          const qr = qrcode(0, 'M');
+          qr.addData(data.orderId);
+          qr.make();
+          document.getElementById('qr-code').innerHTML = qr.createImgTag(5, 0);
+        } else {
+          alert(data.message);
+          btn.textContent = "🧾 Buat Pesanan & Cetak Nota";
+          btn.disabled = false;
+        }
+      })
+      .catch(err => {
+        alert("Gagal terhubung.");
+        btn.textContent = "🧾 Buat Pesanan & Cetak Nota";
+        btn.disabled = false;
+      });
+    });
+
+    document.getElementById('new-btn').addEventListener('click', () => { location.reload(); });
+
+    // Autocomplete Logic
+    function autocomplete(inp, arr) {
+      let currentFocus;
+      inp.addEventListener("input", function(e) {
+        let a, b, i, val = this.value;
+        closeAllLists();
+        if (!val) { return false;}
+        currentFocus = -1;
+        a = document.createElement("DIV");
+        a.setAttribute("id", this.id + "autocomplete-list");
+        a.setAttribute("class", "autocomplete-items");
+        this.parentNode.appendChild(a);
+        for (i = 0; i < arr.length; i++) {
+          if (arr[i].nama.substr(0, val.length).toUpperCase() == val.toUpperCase()) {
+            b = document.createElement("DIV");
+            b.innerHTML = "<strong>" + arr[i].nama.substr(0, val.length) + "</strong>";
+            b.innerHTML += arr[i].nama.substr(val.length);
+            b.innerHTML += `<span style="float:right; color:#888; font-size:12px;">${arr[i].wa}</span>`;
+            b.innerHTML += "<input type='hidden' value='" + arr[i].nama + "'>";
+            b.innerHTML += "<input type='hidden' class='cust-wa' value='" + arr[i].wa + "'>";
+            b.addEventListener("click", function(e) {
+                inp.value = this.getElementsByTagName("input")[0].value;
+                document.getElementById('custWA').value = this.getElementsByClassName("cust-wa")[0].value;
+                closeAllLists();
+            });
+            a.appendChild(b);
+          }
+        }
+      });
+      function closeAllLists(elmnt) {
+        var x = document.getElementsByClassName("autocomplete-items");
+        for (var i = 0; i < x.length; i++) {
+          if (elmnt != x[i] && elmnt != inp) { x[i].parentNode.removeChild(x[i]); }
+        }
+      }
+      document.addEventListener("click", function (e) { closeAllLists(e.target); });
+    }
+  </script>
+</body>
+</html>

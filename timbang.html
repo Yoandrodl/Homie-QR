@@ -11,6 +11,14 @@
     #result-box { display: none; text-align: center; }
     #qr-code { margin: 20px auto; padding: 15px; background: white; border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); display: inline-block; }
     .order-id { font-size: 28px; font-weight: 700; color: #2b3a4a; letter-spacing: 2px; margin-bottom: 10px; }
+    
+    .antrean-card { background: #fff3cd; border: 1px solid #ffe69c; padding: 15px; border-radius: 12px; margin-bottom: 20px; cursor: pointer; transition: 0.3s; }
+    .antrean-card:hover { background: #ffecb5; }
+    .antrean-name { font-weight: bold; font-size: 16px; color: #664d03; }
+    .antrean-detail { font-size: 13px; color: #856404; margin-top: 5px; }
+    
+    #form-timbang { display: none; }
+    .selected-info { background: #e2e8f0; padding: 15px; border-radius: 12px; margin-bottom: 20px; }
   </style>
 </head>
 <body>
@@ -20,14 +28,20 @@
       <span class="user-badge" id="user-badge">PIC</span>
     </div>
 
-    <div class="card" id="form-card">
-      <h2 class="text-center">Stasiun Timbang</h2>
-      <p class="subtitle">Masukkan detail pesanan baru.</p>
-      
-      <div class="form-group">
-        <label>Nama Pelanggan</label>
-        <input type="text" id="custName" placeholder="Contoh: Budi Santoso">
+    <div class="card" id="list-card">
+      <h2 class="text-center">Antrean Timbang</h2>
+      <p class="subtitle text-center">Pilih pesanan yang akan ditimbang.</p>
+      <div id="loading" class="text-center" style="color: #718096; margin: 20px 0;">Memuat antrean...</div>
+      <div id="antrean-container"></div>
+    </div>
+
+    <div class="card" id="form-timbang">
+      <div class="selected-info">
+        <div style="font-size: 12px; color: #718096;">Menimbang Untuk:</div>
+        <div id="selected-name" style="font-weight: bold; font-size: 18px; margin-top: 5px;"></div>
+        <div id="selected-service" style="font-size: 14px; margin-top: 3px;"></div>
       </div>
+      
       <div class="form-group">
         <label>Berat (Kg)</label>
         <input type="number" step="0.1" id="weight" placeholder="Contoh: 3.5">
@@ -57,11 +71,12 @@
         </div>
       </div>
       
-      <button id="submit-btn" class="btn">Buat Pesanan & Buat QR</button>
+      <button id="submit-btn" class="btn btn-success">Simpan Berat & Cetak QR</button>
+      <button id="cancel-btn" class="btn btn-secondary" style="margin-top: 10px;">Batal</button>
     </div>
 
     <div class="card" id="result-box">
-      <h3 style="color: #27ae60; margin-top:0; font-size: 22px;">Pesanan Berhasil! 🎉</h3>
+      <h3 style="color: #27ae60; margin-top:0; font-size: 22px;">Berhasil Disimpan! 🎉</h3>
       <p style="margin-bottom: 5px;">Order ID:</p>
       <div class="order-id" id="display-order-id"></div>
       <div id="qr-code"></div>
@@ -70,17 +85,16 @@
         <button id="btn-manual-video" class="btn btn-secondary" style="font-size: 13px; padding: 10px; margin-top: 0; display: none;">⬇️ Unduh Ulang Video</button>
       </div>
       <button id="print-btn" class="btn" style="background: linear-gradient(135deg, #72bde6, #4a90e2); box-shadow: 0 4px 15px rgba(74, 144, 226, 0.3); margin-top: 15px;">🖨️ Print Struk / QR</button>
-      <button id="new-btn" class="btn btn-secondary" style="margin-top: 12px;">Buat Pesanan Lain</button>
+      <button id="new-btn" class="btn btn-secondary" style="margin-top: 12px;">Kembali ke Antrean</button>
     </div>
 
-    <a href="kanban.html" class="btn btn-secondary" style="display: block; text-align: center; margin-top: 20px; text-decoration: none;">📊 Lihat Laporan Operasional</a>
   </div>
 
   <script>
     const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwmVsqTzRc1kHwbjarDIU7p_ghxPiDgVHBM_Bds1p-4FYEOWrL1s1wkLriH-x4TD_M56A/exec";
     
     const role = localStorage.getItem('homie_role');
-    const picName = localStorage.getItem('homie_name');
+    const picName = localStorage.getItem('homie_name') || "Timbang";
 
     if (!role || (role !== 'Timbang' && role !== 'Admin')) {
       window.location.href = "index.html";
@@ -94,6 +108,68 @@
       else { localStorage.clear(); window.location.href = "index.html"; }
     });
 
+    let servicesDB = [];
+    let selectedOrder = null;
+    let servicePrice = 0;
+
+    // Load Data
+    function loadAntrean() {
+      document.getElementById('list-card').style.display = 'block';
+      document.getElementById('form-timbang').style.display = 'none';
+      document.getElementById('result-box').style.display = 'none';
+      document.getElementById('loading').style.display = 'block';
+      document.getElementById('antrean-container').innerHTML = "";
+
+      Promise.all([
+        fetch(APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'get_kanban' }) }).then(r => r.json()),
+        fetch(APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'get_services' }) }).then(r => r.json())
+      ]).then(([kanbanRes, servRes]) => {
+        document.getElementById('loading').style.display = 'none';
+        
+        if (servRes.status === 'success') servicesDB = servRes.data;
+        
+        if (kanbanRes.status === 'success') {
+          const pending = kanbanRes.data.filter(o => o["Status Terakhir"] === "Menunggu Timbang");
+          if (pending.length === 0) {
+            document.getElementById('antrean-container').innerHTML = `<div class="text-center" style="color:#718096; padding: 20px;">Tidak ada pesanan yang menunggu ditimbang.</div>`;
+            return;
+          }
+
+          pending.forEach(order => {
+            const div = document.createElement('div');
+            div.className = 'antrean-card';
+            div.innerHTML = `
+              <div class="antrean-name">👤 ${order["Nama Pelanggan"]}</div>
+              <div class="antrean-detail">Layanan: ${order["Jenis Layanan"] || "-"}</div>
+              <div class="antrean-detail">Order ID: ${order["Order ID"]}</div>
+            `;
+            div.addEventListener('click', () => selectOrder(order));
+            document.getElementById('antrean-container').appendChild(div);
+          });
+        }
+      });
+    }
+
+    function selectOrder(order) {
+      selectedOrder = order;
+      
+      // Cari Harga Per Kg
+      servicePrice = 0;
+      const srv = servicesDB.find(s => s.nama === order["Jenis Layanan"]);
+      if (srv) servicePrice = srv.harga;
+
+      document.getElementById('list-card').style.display = 'none';
+      document.getElementById('form-timbang').style.display = 'block';
+      
+      document.getElementById('selected-name').textContent = order["Nama Pelanggan"];
+      document.getElementById('selected-service').textContent = `Layanan: ${order["Jenis Layanan"]} (Rp ${servicePrice.toLocaleString('id-ID')}/Kg)`;
+      
+      document.getElementById('weight').value = "";
+      document.getElementById('itemsCount').value = "";
+    }
+
+    document.getElementById('cancel-btn').addEventListener('click', loadAntrean);
+
     // --- FOTO LOGIC ---
     let finalPhotoBlob = null;
     document.getElementById('btn-foto').addEventListener('click', () => {
@@ -103,36 +179,27 @@
     document.getElementById('input-foto').addEventListener('change', function(e) {
       const file = e.target.files[0];
       if (!file) return;
-      
       const reader = new FileReader();
       reader.onload = function(event) {
         const img = new Image();
         img.onload = function() {
           const canvas = document.createElement('canvas');
-          const max_size = 800;
-          let width = img.width;
-          let height = img.height;
-
-          if (width > height && width > max_size) {
-            height *= max_size / width;
-            width = max_size;
-          } else if (height > max_size) {
-            width *= max_size / height;
-            height = max_size;
-          }
-
-          canvas.width = width;
-          canvas.height = height;
+          const MAX_WIDTH = 800; const MAX_HEIGHT = 800;
+          let width = img.width; let height = img.height;
+          if (width > height) { if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; } } 
+          else { if (height > MAX_HEIGHT) { width *= MAX_HEIGHT / height; height = MAX_HEIGHT; } }
+          
+          canvas.width = width; canvas.height = height;
           const ctx = canvas.getContext('2d');
           ctx.drawImage(img, 0, 0, width, height);
           
           canvas.toBlob((blob) => {
             finalPhotoBlob = blob;
-            const url = URL.createObjectURL(blob);
-            document.getElementById('preview-foto').src = url;
-            document.getElementById('preview-foto').style.display = 'block';
-            document.getElementById('btn-foto').textContent = "📷 Foto Tersimpan (Ganti?)";
-          }, 'image/jpeg', 0.6); // 60% quality compression
+            const preview = document.getElementById('preview-foto');
+            preview.src = URL.createObjectURL(blob);
+            preview.style.display = 'block';
+            document.getElementById('btn-foto').textContent = "Ubah Foto";
+          }, 'image/jpeg', 0.6);
         }
         img.src = event.target.result;
       }
@@ -142,65 +209,59 @@
     // --- VIDEO LOGIC ---
     let mediaRecorder;
     let recordedChunks = [];
+    let videoStream;
     let finalVideoBlob = null;
-    let videoStream = null;
-    let videoInterval;
-    let videoSeconds = 0;
+    let recordingTimer;
+    let recordSeconds = 0;
 
+    const videoPreview = document.getElementById('video-preview');
     const btnVideoStart = document.getElementById('btn-video-start');
     const btnVideoStop = document.getElementById('btn-video-stop');
-    const videoPreview = document.getElementById('video-preview');
     const videoStatus = document.getElementById('video-status');
-    const videoTimer = document.getElementById('video-timer');
+    const videoTimerLabel = document.getElementById('video-timer');
 
     btnVideoStart.addEventListener('click', async () => {
       try {
-        videoStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment", width: 640 }, audio: true });
+        videoStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: true });
         videoPreview.srcObject = videoStream;
         videoPreview.style.display = 'block';
-        videoStatus.style.display = 'block';
-        
-        let options = { mimeType: 'video/webm;codecs=vp8,opus' };
-        if (!MediaRecorder.isTypeSupported(options.mimeType)) {
-          options = { mimeType: 'video/webm' };
-          if (!MediaRecorder.isTypeSupported(options.mimeType)) {
-            options = { mimeType: 'video/mp4' };
-            if (!MediaRecorder.isTypeSupported(options.mimeType)) {
-              options = {}; // let browser decide
-            }
-          }
-        }
-        
-        mediaRecorder = new MediaRecorder(videoStream, options);
+        videoPreview.play();
+
+        recordedChunks = [];
+        mediaRecorder = new MediaRecorder(videoStream, { mimeType: 'video/webm' });
         
         mediaRecorder.ondataavailable = (e) => {
           if (e.data.size > 0) recordedChunks.push(e.data);
         };
         
         mediaRecorder.onstop = () => {
-          const ext = options.mimeType && options.mimeType.includes('mp4') ? 'mp4' : 'webm';
-          finalVideoBlob = new Blob(recordedChunks, { type: options.mimeType || 'video/webm' });
-          finalVideoBlob.ext = ext;
+          finalVideoBlob = new Blob(recordedChunks, { type: 'video/webm' });
           videoPreview.srcObject = null;
           videoPreview.src = URL.createObjectURL(finalVideoBlob);
-          videoPreview.controls = true; 
-          videoTimer.textContent = "Selesai merekam.";
+          videoPreview.controls = true;
           
           videoStream.getTracks().forEach(track => track.stop());
+          btnVideoStart.style.display = 'block';
+          btnVideoStart.textContent = 'Mulai Ulang Video';
+          btnVideoStop.style.display = 'none';
+          
+          clearInterval(recordingTimer);
+          videoStatus.style.display = 'none';
         };
-        
-        recordedChunks = [];
+
         mediaRecorder.start();
+        
         btnVideoStart.style.display = 'none';
         btnVideoStop.style.display = 'block';
+        videoStatus.style.display = 'block';
         
-        videoSeconds = 0;
-        videoTimer.textContent = "Merekam... 00:00";
-        videoInterval = setInterval(() => {
-          videoSeconds++;
-          const m = String(Math.floor(videoSeconds / 60)).padStart(2, '0');
-          const s = String(videoSeconds % 60).padStart(2, '0');
-          videoTimer.textContent = `Merekam... ${m}:${s}`;
+        recordSeconds = 0;
+        videoTimerLabel.textContent = "00:00 - Sedang merekam...";
+        recordingTimer = setInterval(() => {
+          recordSeconds++;
+          const m = String(Math.floor(recordSeconds / 60)).padStart(2, '0');
+          const s = String(recordSeconds % 60).padStart(2, '0');
+          videoTimerLabel.textContent = `${m}:${s} - Sedang merekam...`;
         }, 1000);
 
       } catch (err) {
@@ -209,137 +270,110 @@
     });
 
     btnVideoStop.addEventListener('click', () => {
-      if (mediaRecorder && mediaRecorder.state !== "inactive") {
+      if (mediaRecorder && mediaRecorder.state === 'recording') {
         mediaRecorder.stop();
-        clearInterval(videoInterval);
-        btnVideoStop.style.display = 'none';
-        btnVideoStart.style.display = 'block';
-        btnVideoStart.textContent = "🎥 Rekam Ulang";
       }
     });
 
-    // --- AUTO DOWNLOAD UTILITY ---
-    function triggerDownload(blob, filename) {
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.style.display = 'none';
-      a.href = url;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      setTimeout(() => {
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-      }, 500);
-    }
-
+    // --- SUBMIT LOGIC ---
     document.getElementById('submit-btn').addEventListener('click', () => {
-      // Force stop video if they forgot to click stop
-      if (mediaRecorder && mediaRecorder.state === "recording") {
-        mediaRecorder.stop();
-        clearInterval(videoInterval);
-        document.getElementById('btn-video-stop').style.display = 'none';
-        document.getElementById('btn-video-start').style.display = 'block';
-        document.getElementById('btn-video-start').textContent = "🎥 Rekam Ulang";
-      }
+      const weight = parseFloat(document.getElementById('weight').value);
+      const itemsCount = document.getElementById('itemsCount').value;
+      
+      if (!weight) { alert("Berat (Kg) wajib diisi!"); return; }
+      if (mediaRecorder && mediaRecorder.state === 'recording') mediaRecorder.stop();
 
-      const custName = document.getElementById('custName').value.trim();
-      const weight = document.getElementById('weight').value.trim();
-      const itemsCount = document.getElementById('itemsCount').value.trim();
       const btn = document.getElementById('submit-btn');
-
-      if (!custName || !weight || !itemsCount) {
-        alert("Harap lengkapi semua data!");
-        return;
-      }
-
       btn.textContent = "Menyimpan...";
       btn.disabled = true;
 
+      // Hitung harga
+      const total = weight * servicePrice;
+      const orderId = selectedOrder["Order ID"];
+      const custName = selectedOrder["Nama Pelanggan"];
+
+      const payload = {
+        action: 'update_weight',
+        orderId: orderId,
+        weight: weight,
+        itemsCount: itemsCount,
+        totalPrice: total,
+        picName: picName
+      };
+
       fetch(APPS_SCRIPT_URL, {
         method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({ 
-          action: 'create_order', 
-          customerName: custName, 
-          weight: weight,
-          itemsCount: itemsCount,
-          picName: picName
-        })
+        body: JSON.stringify(payload)
       })
       .then(res => res.json())
       .then(data => {
         if (data.status === 'success') {
-          document.getElementById('form-card').style.display = 'none';
+          document.getElementById('form-timbang').style.display = 'none';
           document.getElementById('result-box').style.display = 'block';
-          document.getElementById('display-order-id').textContent = data.orderId;
+          document.getElementById('display-order-id').textContent = orderId;
           
-          // Generate QR
           const qr = qrcode(0, 'M');
-          qr.addData(data.orderId);
+          qr.addData(orderId);
           qr.make();
-          document.getElementById('qr-code').innerHTML = qr.createImgTag(6, 0);
+          document.getElementById('qr-code').innerHTML = qr.createImgTag(5, 0);
 
-          // Auto Download Documentation
+          document.getElementById('manual-download-box').style.display = 'flex';
+          
+          let downloadQueue = [];
+          
+          // Generate File Names HM_DDMonYYYY_Name_WeightKg_ItemsPcs
           const d = new Date();
-          const months = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Ags", "Sep", "Okt", "Nov", "Des"];
-          const dateStr = `${d.getDate()}${months[d.getMonth()]}${d.getFullYear()}`;
-          const safeName = custName.replace(/[^a-zA-Z0-9 ]/g, '').trim().replace(/ /g, '_');
-          const baseFilename = `HM_${dateStr}_${safeName}_${weight}Kg_${itemsCount}Pcs`;
-
-          let delay = 0;
-          let showManualBox = false;
+          const monthNames = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
+          const dateStr = String(d.getDate()).padStart(2, '0') + monthNames[d.getMonth()] + d.getFullYear();
+          
+          const cleanName = custName.replace(/[^a-zA-Z0-9]/g, "_");
+          const baseFileName = `HM_${dateStr}_${cleanName}_${weight}Kg_${itemsCount || '0'}Pcs`;
 
           if (finalPhotoBlob) {
-            triggerDownload(finalPhotoBlob, `${baseFilename}_Foto.jpg`);
-            delay = 1000;
-            
-            showManualBox = true;
-            const btnMFoto = document.getElementById('btn-manual-foto');
-            btnMFoto.style.display = 'block';
-            btnMFoto.onclick = () => triggerDownload(finalPhotoBlob, `${baseFilename}_Foto.jpg`);
+            const btnManualFoto = document.getElementById('btn-manual-foto');
+            const url = URL.createObjectURL(finalPhotoBlob);
+            const fileName = baseFileName + "_Foto.jpg";
+            btnManualFoto.onclick = () => {
+              const a = document.createElement('a'); a.href = url; a.download = fileName; a.click();
+            };
+            btnManualFoto.style.display = 'block';
+            downloadQueue.push(() => btnManualFoto.click());
           }
-          
-          if (finalVideoBlob) {
-            setTimeout(() => {
-              triggerDownload(finalVideoBlob, `${baseFilename}_Video.${finalVideoBlob.ext || 'webm'}`);
-            }, delay);
 
-            showManualBox = true;
-            const btnMVideo = document.getElementById('btn-manual-video');
-            btnMVideo.style.display = 'block';
-            btnMVideo.onclick = () => triggerDownload(finalVideoBlob, `${baseFilename}_Video.${finalVideoBlob.ext || 'webm'}`);
+          if (finalVideoBlob) {
+            const btnManualVideo = document.getElementById('btn-manual-video');
+            const url = URL.createObjectURL(finalVideoBlob);
+            const fileName = baseFileName + "_Video.webm";
+            btnManualVideo.onclick = () => {
+              const a = document.createElement('a'); a.href = url; a.download = fileName; a.click();
+            };
+            btnManualVideo.style.display = 'block';
+            downloadQueue.push(() => btnManualVideo.click());
           }
-          
-          if (showManualBox) {
-            document.getElementById('manual-download-box').style.display = 'flex';
-          }
+
+          let delay = 0;
+          downloadQueue.forEach(fn => {
+            setTimeout(fn, delay);
+            delay += 1000; 
+          });
+
         } else {
           alert(data.message);
-          btn.textContent = "Buat Pesanan & Buat QR";
+          btn.textContent = "Simpan Berat & Cetak QR";
           btn.disabled = false;
         }
       })
       .catch(err => {
-        alert("Gagal terhubung ke database.");
-        btn.textContent = "Buat Pesanan & Buat QR";
+        alert("Gagal terhubung.");
+        btn.textContent = "Simpan Berat & Cetak QR";
         btn.disabled = false;
       });
     });
 
-    document.getElementById('print-btn').addEventListener('click', () => {
-      window.print();
-    });
+    document.getElementById('print-btn').addEventListener('click', () => { window.print(); });
+    document.getElementById('new-btn').addEventListener('click', () => { loadAntrean(); });
 
-    document.getElementById('new-btn').addEventListener('click', () => {
-      document.getElementById('custName').value = "";
-      document.getElementById('weight').value = "";
-      document.getElementById('itemsCount').value = "";
-      document.getElementById('submit-btn').textContent = "Buat Pesanan & Buat QR";
-      document.getElementById('submit-btn').disabled = false;
-      document.getElementById('form-card').style.display = 'block';
-      document.getElementById('result-box').style.display = 'none';
-    });
+    loadAntrean();
   </script>
 </body>
 </html>

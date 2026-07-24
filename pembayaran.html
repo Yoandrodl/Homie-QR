@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Konfirmasi Pembayaran - Homie Laundry</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .wrapper { max-width: 600px; margin: 40px auto; padding: 0 15px; }
+    .nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
+    .card { background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(12px); border-radius: 20px; padding: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-bottom: 15px; display: flex; flex-direction: column; }
+    
+    .order-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; border-bottom: 1px dashed #cbd5e0; padding-bottom: 10px; }
+    .order-id { font-weight: bold; color: #2d3748; font-size: 16px; }
+    .order-date { font-size: 12px; color: #718096; }
+    
+    .order-body { font-size: 14px; color: #4a5568; line-height: 1.5; }
+    .customer-name { font-weight: 600; font-size: 16px; color: #1a202c; margin-bottom: 5px; }
+    
+    .total-price { font-size: 18px; font-weight: bold; color: #e53e3e; margin-top: 10px; }
+    
+    .btn { display: inline-block; padding: 10px 15px; border: none; border-radius: 8px; font-size: 14px; font-weight: bold; cursor: pointer; text-align: center; transition: 0.3s; margin-top: 15px; }
+    .btn-success { background: #48bb78; color: white; width: 100%; }
+    .btn-success:hover { background: #38a169; }
+    
+    .empty-state { text-align: center; padding: 40px 20px; color: #718096; }
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+    <div class="nav">
+      <h2 style="margin:0;">💳 Daftar Piutang</h2>
+      <a href="admin.html" id="back-link" class="btn-header">Kembali</a>
+    </div>
+
+    <div id="loading" class="text-center" style="margin-top: 50px; color: #888;">Memuat data tagihan...</div>
+    <div id="list-container"></div>
+  </div>
+
+  <script>
+    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwmVsqTzRc1kHwbjarDIU7p_ghxPiDgVHBM_Bds1p-4FYEOWrL1s1wkLriH-x4TD_M56A/exec";
+    
+    function loadUnpaid() {
+      document.getElementById('loading').style.display = 'block';
+      document.getElementById('list-container').innerHTML = "";
+      
+      fetch(APPS_SCRIPT_URL, {
+        method: 'POST',
+        body: JSON.stringify({ action: 'get_kanban' })
+      })
+      .then(res => res.json())
+      .then(res => {
+        document.getElementById('loading').style.display = 'none';
+        if (res.status === 'success') {
+          const unpaid = res.data.filter(o => o["Status Pembayaran"] !== "Lunas" && o["Total Harga"] && o["Total Harga"] !== 0 && o["Total Harga"] !== "0");
+          renderList(unpaid.reverse());
+        } else {
+          alert("Gagal memuat data.");
+        }
+      })
+      .catch(err => {
+        document.getElementById('loading').textContent = "Koneksi gagal.";
+      });
+    }
+
+    function renderList(orders) {
+      const container = document.getElementById('list-container');
+      
+      if (orders.length === 0) {
+        container.innerHTML = `<div class="empty-state"><h3>Hore! 🎉</h3><p>Tidak ada tagihan yang belum dibayar.</p></div>`;
+        return;
+      }
+
+      orders.forEach(order => {
+        const div = document.createElement('div');
+        div.className = 'card';
+        div.innerHTML = `
+          <div class="order-head">
+            <span class="order-id">${order["Order ID"]}</span>
+            <span class="order-date">${order["Tanggal Masuk"]}</span>
+          </div>
+          <div class="order-body">
+            <div class="customer-name">👤 ${order["Nama Pelanggan"]}</div>
+            <div>Layanan: <b>${order["Jenis Layanan"] || "-"}</b></div>
+            <div>Status: ${order["Status Terakhir"]}</div>
+            <div class="total-price">Tagihan: Rp ${parseInt(order["Total Harga"]).toLocaleString('id-ID')}</div>
+          </div>
+          <button class="btn btn-success" onclick="markPaid('${order["Order ID"]}')">Tandai Lunas ✅</button>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    window.markPaid = function(orderId) {
+      if(!confirm("Yakin menandai pesanan " + orderId + " sebagai LUNAS?")) return;
+      
+      fetch(APPS_SCRIPT_URL, {
+        method: 'POST',
+        body: JSON.stringify({ action: 'mark_paid', orderId: orderId })
+      })
+      .then(res => res.json())
+      .then(res => {
+        if (res.status === 'success') {
+          loadUnpaid(); // Reload
+        } else {
+          alert(res.message);
+        }
+      });
+    };
+
+    loadUnpaid();
+  </script>
+</body>
+</html>
