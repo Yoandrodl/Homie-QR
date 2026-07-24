@@ -141,6 +141,7 @@
             div.innerHTML = `
               <div class="antrean-name">👤 ${order["Nama Pelanggan"]}</div>
               <div class="antrean-detail">Layanan: ${order["Jenis Layanan"] || "-"}</div>
+              ${order["Catatan"] ? `<div class="antrean-detail" style="color:#d97706;">⚠️ Catatan: ${order["Catatan"]}</div>` : ''}
               <div class="antrean-detail">Order ID: ${order["Order ID"]}</div>
             `;
             div.addEventListener('click', () => selectOrder(order));
@@ -162,7 +163,9 @@
       document.getElementById('form-timbang').style.display = 'block';
       
       document.getElementById('selected-name').textContent = order["Nama Pelanggan"];
-      document.getElementById('selected-service').textContent = `Layanan: ${order["Jenis Layanan"]} (Rp ${servicePrice.toLocaleString('id-ID')}/Kg)`;
+      let srvText = `Layanan: ${order["Jenis Layanan"]} (Rp ${servicePrice.toLocaleString('id-ID')}/Kg)`;
+      if (order["Catatan"]) srvText += `<br><span style="color:#d97706; font-size:12px;">⚠️ Catatan: ${order["Catatan"]}</span>`;
+      document.getElementById('selected-service').innerHTML = srvText;
       
       document.getElementById('weight').value = "";
       document.getElementById('itemsCount').value = "";

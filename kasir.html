@@ -54,6 +54,11 @@
         </select>
       </div>
 
+      <div class="form-group" style="margin-top: 15px;">
+        <label>Catatan Khusus (Opsional)</label>
+        <input type="text" id="orderNote" placeholder="Misal: Express 2 Jam, Jangan disetrika, dll">
+      </div>
+
       <div class="form-group" id="qtyGroup" style="display: none;">
         <label>Jumlah (Satuan / Pcs)</label>
         <input type="number" id="qtyInput" placeholder="1" value="1">
@@ -190,6 +195,7 @@
       const custName = document.getElementById('custName').value.trim();
       const custWA = document.getElementById('custWA').value.trim();
       const payStatus = document.getElementById('paymentStatus').value;
+      const note = document.getElementById('orderNote').value.trim();
       
       if (!custName || !selectedService) {
         alert("Nama Pelanggan dan Layanan wajib diisi!");
@@ -218,7 +224,8 @@
           weight: weight,
           itemsCount: itemsCount,
           totalPrice: total,
-          isKiloan: isKiloan
+          isKiloan: isKiloan,
+          note: note
         })
       })
       .then(res => res.json())

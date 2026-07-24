@@ -148,6 +148,8 @@
               <span title="Jumlah Pakaian">👕 ${jmlPcs} Pcs</span>
             </div>
           </div>
+          ${order["Catatan"] ? `<div style="background: #fff3cd; padding: 5px 10px; font-size: 12px; color: #856404; border-radius: 4px; margin-top: 5px;">⚠️ <b>Catatan:</b> ${order["Catatan"]}</div>` : ''}
+
           
           <div class="timeline">
             <div class="step" title="Timbang"><span class="step-icon">⚖️</span><span class="step-name">${picTbg}</span></div>
