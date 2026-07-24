@@ -52,7 +52,7 @@
       .then(res => {
         document.getElementById('loading').style.display = 'none';
         if (res.status === 'success') {
-          const unpaid = res.data.filter(o => o["Status Pembayaran"] !== "Lunas" && o["Total Harga"] && o["Total Harga"] !== 0 && o["Total Harga"] !== "0");
+          const unpaid = res.data.filter(o => !o["Status Pembayaran"]?.includes("Lunas") && o["Total Harga"] && o["Total Harga"] !== 0 && o["Total Harga"] !== "0");
           renderList(unpaid.reverse());
         } else {
           alert("Gagal memuat data.");
@@ -85,18 +85,22 @@
             <div>Status: ${order["Status Terakhir"]}</div>
             <div class="total-price">Tagihan: Rp ${parseInt(order["Total Harga"]).toLocaleString('id-ID')}</div>
           </div>
-          <button class="btn btn-success" onclick="markPaid('${order["Order ID"]}')">Tandai Lunas ✅</button>
+          <div style="display: flex; gap: 8px; margin-top: 15px;">
+             <button class="btn btn-success" style="flex:1; margin-top:0;" onclick="markPaid('${order["Order ID"]}', 'Lunas (Tunai)')">💵 Tunai</button>
+             <button class="btn btn-success" style="flex:1; margin-top:0;" onclick="markPaid('${order["Order ID"]}', 'Lunas (Transfer)')">🏦 Transfer</button>
+             <button class="btn btn-success" style="flex:1; margin-top:0;" onclick="markPaid('${order["Order ID"]}', 'Lunas (QRIS)')">📱 QRIS</button>
+          </div>
         `;
         container.appendChild(div);
       });
     }
 
-    window.markPaid = function(orderId) {
-      if(!confirm("Yakin menandai pesanan " + orderId + " sebagai LUNAS?")) return;
+    window.markPaid = function(orderId, method) {
+      if(!confirm("Tandai pesanan " + orderId + " sebagai " + method + "?")) return;
       
       fetch(APPS_SCRIPT_URL, {
         method: 'POST',
-        body: JSON.stringify({ action: 'mark_paid', orderId: orderId })
+        body: JSON.stringify({ action: 'mark_paid', orderId: orderId, method: method })
       })
       .then(res => res.json())
       .then(res => {

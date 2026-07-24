@@ -67,9 +67,11 @@
 
       <div class="form-group" style="margin-top: 20px;">
         <label>Status Pembayaran</label>
-        <select id="paymentStatus" style="background: #fff5f5; border-color: #feb2b2;">
+        <select id="paymentStatus" style="background: #fff5f5; border-color: #feb2b2;" onchange="this.style.background = this.value === 'Belum Bayar' ? '#fff5f5' : '#f0fff4'; this.style.borderColor = this.value === 'Belum Bayar' ? '#feb2b2' : '#9ae6b4';">
           <option value="Belum Bayar">❌ Belum Bayar</option>
-          <option value="Lunas">✅ LUNAS (Bayar Sekarang)</option>
+          <option value="Lunas (Tunai)">💵 LUNAS (Tunai)</option>
+          <option value="Lunas (Transfer)">🏦 LUNAS (Transfer)</option>
+          <option value="Lunas (QRIS)">📱 LUNAS (QRIS)</option>
         </select>
       </div>
 

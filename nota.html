@@ -133,8 +133,8 @@
           }
 
           const badge = document.getElementById('payment-badge');
-          if (data["Status Pembayaran"] === "Lunas") {
-            badge.textContent = "LUNAS ✅";
+          if (data["Status Pembayaran"] && data["Status Pembayaran"].includes("Lunas")) {
+            badge.textContent = data["Status Pembayaran"].toUpperCase() + " ✅";
             badge.className = "status-badge status-lunas";
           } else {
             badge.textContent = "BELUM BAYAR ❌";
