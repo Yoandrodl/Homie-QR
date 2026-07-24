@@ -90,12 +90,34 @@
       
       <button id="new-btn" class="btn btn-secondary" style="margin-top: 20px;">Buat Pesanan Lain</button>
     </div>
+    <div class="nav">
+      <a href="kanban.html" class="btn btn-secondary" style="display: block; text-align: center; margin-top: 20px; text-decoration: none;">📊 Lihat Laporan Operasional</a>
+    </div>
 
   </div>
 
   <script>
     const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwmVsqTzRc1kHwbjarDIU7p_ghxPiDgVHBM_Bds1p-4FYEOWrL1s1wkLriH-x4TD_M56A/exec";
-    const picName = localStorage.getItem('homie_name') || 'Kasir';
+    
+    const role = localStorage.getItem('homie_role');
+    const picName = localStorage.getItem('homie_name') || "Kasir";
+
+    if (!role || (role !== 'Admin' && role !== 'Kasir')) {
+      window.location.href = "index.html";
+    }
+
+    const backBtn = document.getElementById('back-link');
+    if (role === 'Kasir') {
+      backBtn.textContent = 'Logout';
+      backBtn.style.background = '#e53e3e';
+      backBtn.style.color = '#fff';
+    }
+
+    backBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      if (role === 'Admin') window.location.href = "admin.html";
+      else { localStorage.clear(); window.location.href = "index.html"; }
+    });
 
     let customersDB = [];
     let servicesDB = [];
