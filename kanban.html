@@ -194,10 +194,19 @@
 
       if (dateVal) {
         const parts = dateVal.split('-');
-        const formattedDate = `${parts[2]}/${parts[1]}/${parts[0]}`; 
+        const y = parts[0];
+        const m = parts[1];
+        const d = parts[2];
+        
+        const f1 = `${d}/${m}/${y}`; 
+        const f2 = `${parseInt(d)}/${parseInt(m)}/${y}`; 
+        const f3 = `${m}/${d}/${y}`; 
+        const f4 = `${parseInt(m)}/${parseInt(d)}/${y}`; 
+        const f5 = dateVal; 
+
         filtered = filtered.filter(order => {
           const tglMasuk = order["Tanggal Masuk"] || "";
-          return tglMasuk.startsWith(formattedDate);
+          return tglMasuk.startsWith(f1) || tglMasuk.startsWith(f2) || tglMasuk.startsWith(f3) || tglMasuk.startsWith(f4) || tglMasuk.startsWith(f5);
         });
       }
 
