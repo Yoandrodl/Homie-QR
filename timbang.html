@@ -284,21 +284,35 @@
       if (mediaRecorder && mediaRecorder.state === 'recording') mediaRecorder.stop();
 
       const btn = document.getElementById('submit-btn');
-      btn.textContent = "Menyimpan...";
+      btn.textContent = "Mengunggah & Menyimpan...";
       btn.disabled = true;
 
-      // Hitung harga
       const total = weight * servicePrice;
       const orderId = selectedOrder["Order ID"];
       const custName = selectedOrder["Nama Pelanggan"];
 
+      let base64String = "";
+      if (finalPhotoBlob) {
+        const reader = new FileReader();
+        reader.readAsDataURL(finalPhotoBlob);
+        reader.onloadend = function() {
+          base64String = reader.result.split(',')[1];
+          sendDataToServer(base64String, orderId, custName, weight, itemsCount, total);
+        }
+      } else {
+        sendDataToServer("", orderId, custName, weight, itemsCount, total);
+      }
+    });
+
+    function sendDataToServer(photoB64, orderId, custName, weight, itemsCount, total) {
       const payload = {
         action: 'update_weight',
         orderId: orderId,
         weight: weight,
         itemsCount: itemsCount,
         totalPrice: total,
-        picName: picName
+        picName: picName,
+        photoBase64: photoB64
       };
 
       fetch(APPS_SCRIPT_URL, {
@@ -320,55 +334,36 @@
           document.getElementById('manual-download-box').style.display = 'flex';
           
           let downloadQueue = [];
-          
-          // Generate File Names HM_DDMonYYYY_Name_WeightKg_ItemsPcs
           const d = new Date();
           const monthNames = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
           const dateStr = String(d.getDate()).padStart(2, '0') + monthNames[d.getMonth()] + d.getFullYear();
-          
           const cleanName = custName.replace(/[^a-zA-Z0-9]/g, "_");
           const baseFileName = `HM_${dateStr}_${cleanName}_${weight}Kg_${itemsCount || '0'}Pcs`;
-
-          if (finalPhotoBlob) {
-            const btnManualFoto = document.getElementById('btn-manual-foto');
-            const url = URL.createObjectURL(finalPhotoBlob);
-            const fileName = baseFileName + "_Foto.jpg";
-            btnManualFoto.onclick = () => {
-              const a = document.createElement('a'); a.href = url; a.download = fileName; a.click();
-            };
-            btnManualFoto.style.display = 'block';
-            downloadQueue.push(() => btnManualFoto.click());
-          }
 
           if (finalVideoBlob) {
             const btnManualVideo = document.getElementById('btn-manual-video');
             const url = URL.createObjectURL(finalVideoBlob);
-            const fileName = baseFileName + "_Video.webm";
             btnManualVideo.onclick = () => {
-              const a = document.createElement('a'); a.href = url; a.download = fileName; a.click();
+              const a = document.createElement('a'); a.href = url; a.download = baseFileName + "_Video.webm"; a.click();
             };
             btnManualVideo.style.display = 'block';
             downloadQueue.push(() => btnManualVideo.click());
           }
 
           let delay = 0;
-          downloadQueue.forEach(fn => {
-            setTimeout(fn, delay);
-            delay += 1000; 
-          });
-
+          downloadQueue.forEach(fn => { setTimeout(fn, delay); delay += 1000; });
         } else {
           alert(data.message);
-          btn.textContent = "Simpan Berat & Cetak QR";
-          btn.disabled = false;
+          document.getElementById('submit-btn').textContent = "Simpan Berat & Cetak QR";
+          document.getElementById('submit-btn').disabled = false;
         }
       })
       .catch(err => {
-        alert("Gagal terhubung.");
-        btn.textContent = "Simpan Berat & Cetak QR";
-        btn.disabled = false;
+        alert("Gagal terhubung ke server.");
+        document.getElementById('submit-btn').textContent = "Simpan Berat & Cetak QR";
+        document.getElementById('submit-btn').disabled = false;
       });
-    });
+    }
 
     document.getElementById('print-btn').addEventListener('click', () => { window.print(); });
     document.getElementById('new-btn').addEventListener('click', () => { loadAntrean(); });
