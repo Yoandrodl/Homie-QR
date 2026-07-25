@@ -296,6 +296,21 @@
 
       let base64String = "";
       if (finalPhotoBlob) {
+        // --- FITUR AUTO-SAVE KE HP ---
+        const safeName = custName.replace(/[^a-zA-Z0-9 ]/g, '').replace(/\s+/g, '_');
+        const months = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
+        const d = new Date();
+        const dateStr = String(d.getDate()).padStart(2, '0') + months[d.getMonth()] + d.getFullYear();
+        const fileName = "HM_" + dateStr + "_" + safeName + "_" + weight + "Kg_" + itemsCount + "Pcs_Foto.jpg";
+        
+        const downloadLink = document.createElement("a");
+        downloadLink.href = URL.createObjectURL(finalPhotoBlob);
+        downloadLink.download = fileName;
+        document.body.appendChild(downloadLink);
+        downloadLink.click();
+        document.body.removeChild(downloadLink);
+        // ------------------------------
+
         const reader = new FileReader();
         reader.readAsDataURL(finalPhotoBlob);
         reader.onloadend = function() {
