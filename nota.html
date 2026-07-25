@@ -111,7 +111,19 @@
           const data = res.data;
           
           document.getElementById('val-order').textContent = data["Order ID"];
-          document.getElementById('val-tanggal').textContent = data["Tanggal Masuk"];
+          
+          let tanggalStr = data["Tanggal Masuk"];
+          if (tanggalStr) {
+            try {
+              const d = new Date(tanggalStr);
+              if (!isNaN(d)) {
+                const options = { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' };
+                tanggalStr = d.toLocaleDateString('id-ID', options).replace(/\./g, ':');
+              }
+            } catch(e){}
+          }
+          document.getElementById('val-tanggal').textContent = tanggalStr;
+          
           document.getElementById('val-nama').textContent = data["Nama Pelanggan"];
           document.getElementById('val-layanan').textContent = data["Jenis Layanan"] || "-";
           
@@ -154,7 +166,18 @@
           // Handle Photo
           if (data["Link Foto Timbangan"] && data["Link Foto Timbangan"].startsWith("http")) {
              document.getElementById('photo-box').style.display = 'block';
-             document.getElementById('val-foto').src = data["Link Foto Timbangan"];
+             
+             let finalImgUrl = data["Link Foto Timbangan"];
+             // Memodifikasi URL Google Drive agar aman ditampilkan di tag IMG
+             if (finalImgUrl.includes("drive.google.com")) {
+                const idMatch = finalImgUrl.match(/id=([^&]+)/);
+                if (idMatch && idMatch[1]) {
+                   // Menggunakan endpoint lh3 Google (paling anti-blokir untuk gambar)
+                   finalImgUrl = "https://lh3.googleusercontent.com/d/" + idMatch[1];
+                }
+             }
+             
+             document.getElementById('val-foto').src = finalImgUrl;
           }
 
         } else {
