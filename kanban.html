@@ -81,6 +81,19 @@
     </div>
   </div>
 
+  <!-- Modal Cetak Nota -->
+  <div class="modal-overlay" id="nota-modal">
+    <div class="modal-content">
+      <h3 style="margin-top: 0; color: #2d3748;">Pilih Format Nota</h3>
+      <p style="font-size: 14px; color: #718096; margin-bottom: 20px;">Nota ini tidak akan menyertakan foto timbangan.</p>
+      
+      <button class="btn" style="background:#25D366; width: 100%; margin-bottom: 10px;" onclick="actionNota('jpg')">🖼️ Download / Kirim JPG</button>
+      <button class="btn" style="background:#2b6cb0; width: 100%; margin-bottom: 15px;" onclick="actionNota('print')">🖨️ Print Thermal</button>
+      
+      <button class="btn btn-secondary" style="width: 100%;" onclick="closeModal()">Batal</button>
+    </div>
+  </div>
+
   <script>
     const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwmVsqTzRc1kHwbjarDIU7p_ghxPiDgVHBM_Bds1p-4FYEOWrL1s1wkLriH-x4TD_M56A/exec";
     
@@ -137,7 +150,11 @@
 
         card.innerHTML = `
           <div class="card-header">
-            <div class="card-id">${orderId} &nbsp; <button class="btn-print-qr" onclick="showQR('${orderId}')">🖨️ Cetak QR</button></div>
+            <div class="card-id">
+               ${orderId} &nbsp; 
+               <button class="btn-print-qr" onclick="showQR('${orderId}')">🖨️ Cetak QR</button>
+               <button class="btn-print-qr" style="background:#2b6cb0;" onclick="showNotaModal('${orderId}')">📄 Cetak Nota</button>
+            </div>
             <div class="card-status">${statusTxt}</div>
           </div>
           
@@ -181,6 +198,21 @@
 
     function closeModal() {
       document.getElementById('qr-modal').style.display = 'none';
+      document.getElementById('nota-modal').style.display = 'none';
+    }
+    
+    let selectedNotaId = "";
+    function showNotaModal(orderId) {
+       if (orderId === "-") return;
+       selectedNotaId = orderId;
+       document.getElementById('nota-modal').style.display = 'flex';
+    }
+    
+    function actionNota(type) {
+       if (!selectedNotaId) return;
+       const url = `nota.html?id=${selectedNotaId}&notimbangan=1&action=${type}`;
+       window.open(url, '_blank');
+       closeModal();
     }
 
     function getTodayDateString() {

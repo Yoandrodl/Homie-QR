@@ -170,19 +170,41 @@
 
           // Handle Photo
           if (data["Link Foto Timbangan"] && data["Link Foto Timbangan"].startsWith("http")) {
-             document.getElementById('photo-box').style.display = 'block';
-             
-             let finalImgUrl = data["Link Foto Timbangan"];
-             // Memodifikasi URL Google Drive agar aman ditampilkan di tag IMG
-             if (finalImgUrl.includes("drive.google.com")) {
-                const idMatch = finalImgUrl.match(/id=([^&]+)/);
-                if (idMatch && idMatch[1]) {
-                   // Menggunakan endpoint lh3 Google (paling anti-blokir untuk gambar)
-                   finalImgUrl = "https://lh3.googleusercontent.com/d/" + idMatch[1];
-                }
+             if (urlParams.get('notimbangan') !== '1') {
+               document.getElementById('photo-box').style.display = 'block';
+               
+               let finalImgUrl = data["Link Foto Timbangan"];
+               // Memodifikasi URL Google Drive agar aman ditampilkan di tag IMG
+               if (finalImgUrl.includes("drive.google.com")) {
+                  const idMatch = finalImgUrl.match(/id=([^&]+)/);
+                  if (idMatch && idMatch[1]) {
+                     // Menggunakan endpoint lh3 Google (paling anti-blokir untuk gambar)
+                     finalImgUrl = "https://lh3.googleusercontent.com/d/" + idMatch[1];
+                  }
+               }
+               
+               document.getElementById('val-foto').src = finalImgUrl;
              }
-             
-             document.getElementById('val-foto').src = finalImgUrl;
+          }
+          
+          // Handle Action Print / JPG
+          const action = urlParams.get('action');
+          if (action === 'print') {
+             setTimeout(() => window.print(), 800);
+          } else if (action === 'jpg') {
+             const script = document.createElement('script');
+             script.src = "https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js";
+             script.onload = () => {
+                setTimeout(() => {
+                   html2canvas(document.getElementById('receipt'), { scale: 2, useCORS: true }).then(canvas => {
+                      const link = document.createElement('a');
+                      link.download = `Nota_${data["Order ID"]}.jpg`;
+                      link.href = canvas.toDataURL('image/jpeg', 0.9);
+                      link.click();
+                   });
+                }, 800);
+             };
+             document.head.appendChild(script);
           }
 
         } else {
