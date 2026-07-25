@@ -45,6 +45,11 @@
         <label>No WhatsApp</label>
         <input type="tel" id="custWA" placeholder="0812...">
       </div>
+      
+      <div class="form-group" style="margin-top: 15px;">
+        <label>Alamat (Opsional)</label>
+        <input type="text" id="custAlamat" placeholder="Contoh: Jl. Merdeka No 1">
+      </div>
 
       <!-- CARI LAYANAN -->
       <div class="form-group" style="position: relative; margin-top: 20px; padding-top: 15px; border-top: 1px dashed #cbd5e0;">
@@ -226,36 +231,47 @@
           this.parentNode.appendChild(a);
           let matches = [];
           for (i = 0; i < arr.length; i++) {
-            if (arr[i].nama && arr[i].nama.toLowerCase().includes(val.toLowerCase())) {
+            if (arr[i].nama && String(arr[i].nama).toLowerCase().includes(String(val).toLowerCase())) {
               matches.push(arr[i]);
             }
           }
           // Urutkan: yang berawalan huruf tersebut tampil duluan
           matches.sort((a, b) => {
-            const valLower = val.toLowerCase();
-            const aStarts = a.nama.toLowerCase().startsWith(valLower);
-            const bStarts = b.nama.toLowerCase().startsWith(valLower);
+            const valLower = String(val).toLowerCase();
+            const aStarts = String(a.nama).toLowerCase().startsWith(valLower);
+            const bStarts = String(b.nama).toLowerCase().startsWith(valLower);
             if (aStarts && !bStarts) return -1;
             if (!aStarts && bStarts) return 1;
-            return a.nama.localeCompare(b.nama);
+            return String(a.nama).localeCompare(String(b.nama));
           });
           
           let limit = Math.min(matches.length, 30);
           for (i = 0; i < limit; i++) {
               let m = matches[i];
               b = document.createElement("DIV");
-              let alamatText = m.alamat ? " - " + m.alamat : "";
+              let namaStr = String(m.nama);
+              let waStr = m.wa ? String(m.wa) : "";
+              let alamatStr = m.alamat ? String(m.alamat) : "";
               
-              // Highlight matching text
-              const regex = new RegExp("(" + val + ")", "gi");
-              const highlightedName = m.nama.replace(regex, "<span style='color:#4fd1c5;'>$1</span>");
+              let alamatDisplay = alamatStr ? " - " + alamatStr : "";
               
-              b.innerHTML = "<strong>" + highlightedName + "</strong><br><small>" + m.wa + alamatText + "</small>";
-              b.innerHTML += "<input type='hidden' value='" + m.nama + "'>";
-              b.innerHTML += "<input type='hidden' value='" + m.wa + "'>";
+              // Highlight matching text (safely escape regex if needed, but for simple typing it's okay)
+              // Let's use simple replace without breaking HTML tags
+              let highlightedName = namaStr;
+              try {
+                const regex = new RegExp("(" + val.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ")", "gi");
+                highlightedName = namaStr.replace(regex, "<span style='color:#4fd1c5;'>$1</span>");
+              } catch(e) {}
+              
+              b.innerHTML = "<strong>" + highlightedName + "</strong><br><small>" + waStr + alamatDisplay + "</small>";
+              b.innerHTML += "<input type='hidden' value='" + namaStr + "'>";
+              b.innerHTML += "<input type='hidden' value='" + waStr + "'>";
+              b.innerHTML += "<input type='hidden' value='" + alamatStr + "'>";
+              
               b.addEventListener("click", function(e) {
                   inp.value = this.getElementsByTagName("input")[0].value;
                   document.getElementById("custWA").value = this.getElementsByTagName("input")[1].value;
+                  document.getElementById("custAlamat").value = this.getElementsByTagName("input")[2].value;
                   closeAllLists();
               });
               a.appendChild(b);
@@ -465,6 +481,7 @@
     document.getElementById('submit-btn').addEventListener('click', () => {
       const custName = document.getElementById('custName').value.trim();
       const custWA = document.getElementById('custWA').value.trim();
+      const custAlamat = document.getElementById('custAlamat').value.trim();
       const payStatus = document.getElementById('paymentStatus').value;
       const note = document.getElementById('orderNote').value.trim();
       const ongkir = parseInt(document.getElementById('ongkirInput').value) || 0;
@@ -499,6 +516,7 @@
           action: 'create_pos_order_v3', 
           customerName: custName,
           customerWA: custWA || "-",
+          customerAlamat: custAlamat || "-",
           cartItems: cart,
           ongkir: ongkir,
           diskon: diskon,
