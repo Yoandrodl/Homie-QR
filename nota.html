@@ -35,9 +35,9 @@
 
   <div class="receipt" id="receipt" style="display: none;">
     <div class="receipt-header">
-      <img src="https://cdn-icons-png.flaticon.com/512/3003/3003984.png" alt="Logo Homie" style="width: 65px; height: 65px; margin-bottom: 10px; object-fit: contain;">
-      <h2>Homie Laundry</h2>
-      <p>Samarinda, Kalimantan Timur</p>
+      <img src="logo.jpg" alt="Logo Homie" style="width: 180px; height: auto; margin-bottom: 8px; object-fit: contain;">
+      <p style="font-size: 14px; margin: 0; color: #2d3748; font-weight: bold;">0812 2847 0169</p>
+      <p style="font-size: 12px; margin: 2px 0 15px 0; color: #718096;">Jl Aminah Syukur No 13, Samarinda Kota</p>
       <div id="payment-badge" class="status-badge">Memuat...</div>
     </div>
 
@@ -160,7 +160,7 @@
             badge.textContent = data["Status Pembayaran"].toUpperCase() + " ✅";
             badge.className = "status-badge status-lunas";
           } else {
-            badge.textContent = "BELUM BAYAR ❌";
+            badge.textContent = "BELUM BAYAR";
             badge.className = "status-badge status-belum";
           }
 
