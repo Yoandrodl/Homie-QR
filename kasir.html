@@ -224,22 +224,41 @@
           a.setAttribute("id", this.id + "autocomplete-list");
           a.setAttribute("class", "autocomplete-items");
           this.parentNode.appendChild(a);
-          let count = 0;
+          let matches = [];
           for (i = 0; i < arr.length; i++) {
-            if (arr[i].nama && arr[i].nama.toLowerCase().includes(val.toLowerCase()) && count < 10) {
-              count++;
+            if (arr[i].nama && arr[i].nama.toLowerCase().includes(val.toLowerCase())) {
+              matches.push(arr[i]);
+            }
+          }
+          // Urutkan: yang berawalan huruf tersebut tampil duluan
+          matches.sort((a, b) => {
+            const valLower = val.toLowerCase();
+            const aStarts = a.nama.toLowerCase().startsWith(valLower);
+            const bStarts = b.nama.toLowerCase().startsWith(valLower);
+            if (aStarts && !bStarts) return -1;
+            if (!aStarts && bStarts) return 1;
+            return a.nama.localeCompare(b.nama);
+          });
+          
+          let limit = Math.min(matches.length, 30);
+          for (i = 0; i < limit; i++) {
+              let m = matches[i];
               b = document.createElement("DIV");
-              let alamatText = arr[i].alamat ? " - " + arr[i].alamat : "";
-              b.innerHTML = "<strong>" + arr[i].nama + "</strong><br><small>" + arr[i].wa + alamatText + "</small>";
-              b.innerHTML += "<input type='hidden' value='" + arr[i].nama + "'>";
-              b.innerHTML += "<input type='hidden' value='" + arr[i].wa + "'>";
+              let alamatText = m.alamat ? " - " + m.alamat : "";
+              
+              // Highlight matching text
+              const regex = new RegExp("(" + val + ")", "gi");
+              const highlightedName = m.nama.replace(regex, "<span style='color:#4fd1c5;'>$1</span>");
+              
+              b.innerHTML = "<strong>" + highlightedName + "</strong><br><small>" + m.wa + alamatText + "</small>";
+              b.innerHTML += "<input type='hidden' value='" + m.nama + "'>";
+              b.innerHTML += "<input type='hidden' value='" + m.wa + "'>";
               b.addEventListener("click", function(e) {
                   inp.value = this.getElementsByTagName("input")[0].value;
                   document.getElementById("custWA").value = this.getElementsByTagName("input")[1].value;
                   closeAllLists();
               });
               a.appendChild(b);
-            }
           }
       });
       inp.addEventListener("keydown", function(e) {
