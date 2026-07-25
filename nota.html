@@ -126,8 +126,12 @@
           document.getElementById('val-tanggal').textContent = tanggalStr;
           
           document.getElementById('val-nama').textContent = data["Nama Pelanggan"];
-          document.getElementById('val-layanan').textContent = data["Jenis Layanan"] || "-";
-          
+          let layananStr = data["Jenis Layanan"] || "-";
+          if (layananStr !== "-") {
+            const arr = layananStr.split(',');
+            layananStr = arr.map(item => `<div>• ${item.trim()}</div>`).join('');
+          }
+          document.getElementById('val-layanan').innerHTML = layananStr;
           if (data["Catatan"]) {
             document.getElementById('catatan-container').style.display = "flex";
             document.getElementById('val-catatan').textContent = data["Catatan"];
