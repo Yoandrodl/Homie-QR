@@ -226,12 +226,13 @@
           this.parentNode.appendChild(a);
           let count = 0;
           for (i = 0; i < arr.length; i++) {
-            if (arr[i].Nama && arr[i].Nama.toLowerCase().includes(val.toLowerCase()) && count < 10) {
+            if (arr[i].nama && arr[i].nama.toLowerCase().includes(val.toLowerCase()) && count < 10) {
               count++;
               b = document.createElement("DIV");
-              b.innerHTML = "<strong>" + arr[i].Nama + "</strong><br><small>" + arr[i].WA + "</small>";
-              b.innerHTML += "<input type='hidden' value='" + arr[i].Nama + "'>";
-              b.innerHTML += "<input type='hidden' value='" + arr[i].WA + "'>";
+              let alamatText = arr[i].alamat ? " - " + arr[i].alamat : "";
+              b.innerHTML = "<strong>" + arr[i].nama + "</strong><br><small>" + arr[i].wa + alamatText + "</small>";
+              b.innerHTML += "<input type='hidden' value='" + arr[i].nama + "'>";
+              b.innerHTML += "<input type='hidden' value='" + arr[i].wa + "'>";
               b.addEventListener("click", function(e) {
                   inp.value = this.getElementsByTagName("input")[0].value;
                   document.getElementById("custWA").value = this.getElementsByTagName("input")[1].value;
