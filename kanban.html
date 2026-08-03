@@ -58,9 +58,12 @@
       <label style="margin-bottom: 8px; font-size: 13px;">Pencarian & Filter:</label>
       <input type="text" id="search-input" placeholder="Cari Nama atau ID Pesanan..." style="margin-bottom: 10px; padding: 10px; border-radius: 8px; width: 100%; box-sizing: border-box; font-size: 14px;">
       <div style="display: flex; gap: 10px; align-items: center;">
-        <input type="date" id="filter-date" style="padding: 10px; border-radius: 8px; flex: 1; margin: 0;">
-        <button id="btn-filter" class="btn" style="width: auto; margin: 0; padding: 10px 20px;">Terapkan</button>
-        <button id="btn-reset" class="btn btn-secondary" style="width: auto; margin: 0; padding: 10px 20px;">Semua</button>
+        <select id="filter-date" style="padding: 10px; border-radius: 8px; flex: 1; margin: 0; font-size: 14px; border: 1px solid #cbd5e0;">
+           <option value="today">Hari Ini</option>
+           <option value="3days">3 Hari Terakhir</option>
+           <option value="7days">7 Hari Terakhir</option>
+           <option value="all">Semua Tanggal</option>
+        </select>
       </div>
     </div>
     <div id="loading" class="text-center" style="margin-top: 50px; color: #888;">Memuat data dari database...</div>
@@ -119,7 +122,7 @@
         
         if (res.status === 'success') {
           allOrders = res.data;
-          document.getElementById('filter-date').value = getTodayDateString();
+          document.getElementById('filter-date').value = "today";
           applyFilters();
         } else {
           alert(res.message);
@@ -215,33 +218,55 @@
        closeModal();
     }
 
-    function getTodayDateString() {
-      const d = new Date();
-      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    function parseOrderDate(dateStr) {
+      if (!dateStr) return null;
+      let s = String(dateStr);
+      // Jika ISO format atau yyyy-mm-dd
+      if (s.includes('T') || s.match(/^\d{4}-\d{2}-\d{2}/)) {
+        return new Date(s);
+      }
+      // Jika format Indonesia dd/mm/yyyy
+      const parts = s.split(' ');
+      if (parts.length > 0) {
+        const dmy = parts[0].split('/');
+        if (dmy.length === 3) {
+          const d = parseInt(dmy[0], 10);
+          const m = parseInt(dmy[1], 10) - 1;
+          const y = parseInt(dmy[2], 10);
+          if (y > 2000) return new Date(y, m, d);
+        }
+      }
+      return null;
     }
 
     function applyFilters() {
-      const dateVal = document.getElementById('filter-date').value;
+      const filterRange = document.getElementById('filter-date').value;
       const searchVal = document.getElementById('search-input').value.toLowerCase().trim();
       
       let filtered = allOrders;
 
-      if (dateVal) {
-        const parts = dateVal.split('-');
-        const y = parts[0];
-        const m = parts[1];
-        const d = parts[2];
-        
-        const f1 = `${d}/${m}/${y}`; 
-        const f2 = `${parseInt(d)}/${parseInt(m)}/${y}`; 
-        const f3 = `${m}/${d}/${y}`; 
-        const f4 = `${parseInt(m)}/${parseInt(d)}/${y}`; 
-        const f5 = dateVal; 
-
-        filtered = filtered.filter(order => {
-          const tglMasuk = order["Tanggal Masuk"] || "";
-          return tglMasuk.startsWith(f1) || tglMasuk.startsWith(f2) || tglMasuk.startsWith(f3) || tglMasuk.startsWith(f4) || tglMasuk.startsWith(f5);
-        });
+      if (filterRange !== "all") {
+         const now = new Date();
+         // Normalisasi ke jam 00:00:00 hari ini
+         const todayMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+         
+         let diffLimit = 0;
+         if (filterRange === "3days") diffLimit = 3;
+         if (filterRange === "7days") diffLimit = 7;
+         
+         filtered = filtered.filter(order => {
+            const tglMasuk = order["Tanggal Masuk"] || "";
+            const orderDate = parseOrderDate(tglMasuk);
+            if (!orderDate) return false;
+            
+            const orderMidnight = new Date(orderDate.getFullYear(), orderDate.getMonth(), orderDate.getDate());
+            
+            // Hitung selisih hari
+            const diffTime = todayMidnight.getTime() - orderMidnight.getTime();
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            
+            return diffDays >= 0 && diffDays <= diffLimit;
+         });
       }
 
       if (searchVal) {
@@ -255,14 +280,8 @@
       renderList(filtered);
     }
 
-    document.getElementById('btn-filter').addEventListener('click', applyFilters);
+    document.getElementById('filter-date').addEventListener('change', applyFilters);
     document.getElementById('search-input').addEventListener('input', applyFilters);
-
-    document.getElementById('btn-reset').addEventListener('click', () => {
-      document.getElementById('filter-date').value = "";
-      document.getElementById('search-input').value = "";
-      applyFilters();
-    });
 
     loadData();
   </script>
