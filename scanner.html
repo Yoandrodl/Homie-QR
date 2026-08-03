@@ -34,7 +34,15 @@
     <div id="scan-result" class="card">
       <p style="margin-top:0; margin-bottom: 5px;">ID Pesanan:</p>
       <strong id="scanned-id"></strong>
-      <button id="save-btn" class="btn">Selesaikan Proses Ini</button>
+      
+      <!-- Info Pelanggan untuk Kurir -->
+      <div id="customer-info" style="display:none; margin-top: 15px; background: #f7fafc; padding: 10px; border-radius: 8px; text-align: left; font-size: 14px;">
+         <div style="margin-bottom: 5px;"><strong>👤 Nama:</strong> <span id="info-nama">-</span></div>
+         <div style="margin-bottom: 5px;"><strong>📱 WA:</strong> <span id="info-wa">-</span></div>
+         <div><strong>📍 Alamat:</strong> <span id="info-alamat">-</span></div>
+      </div>
+      
+      <button id="save-btn" class="btn" style="margin-top: 20px;">Selesaikan Proses Ini</button>
       <button id="cancel-btn" class="btn btn-secondary" style="margin-top: 10px;">Batal & Scan Ulang</button>
     </div>
 
@@ -88,8 +96,41 @@
       
       document.getElementById('scanned-id').textContent = decodedText;
       document.getElementById('reader').style.display = 'none';
-      document.getElementById('scan-result').style.display = 'block';
       document.getElementById('status-box').style.display = 'none';
+      
+      // Tampilkan tombol loading sementara mencari info pelanggan
+      const scanResult = document.getElementById('scan-result');
+      const saveBtn = document.getElementById('save-btn');
+      const custInfo = document.getElementById('customer-info');
+      
+      scanResult.style.display = 'block';
+      saveBtn.disabled = true;
+      saveBtn.textContent = "Mencari data...";
+      custInfo.style.display = 'none';
+
+      // Ambil Info Pesanan (Khususnya berguna untuk Kurir)
+      fetch(APPS_SCRIPT_URL, {
+        method: 'POST',
+        body: JSON.stringify({ action: 'track_order', orderId: decodedText })
+      })
+      .then(res => res.json())
+      .then(data => {
+        saveBtn.disabled = false;
+        saveBtn.textContent = "Selesaikan Proses Ini";
+        
+        if (data.status === 'success') {
+           document.getElementById('info-nama').textContent = data.data["Nama Pelanggan"] || "-";
+           let wa = data.data["No WA Pelanggan"] || data.data["WA"] || "-";
+           document.getElementById('info-wa').innerHTML = wa !== "-" ? `<a href="https://wa.me/${wa.startsWith('0') ? '62'+wa.slice(1) : wa}" target="_blank">${wa}</a>` : "-";
+           document.getElementById('info-alamat').textContent = data.data["Alamat"] || "-";
+           
+           custInfo.style.display = 'block';
+        }
+      })
+      .catch(err => {
+        saveBtn.disabled = false;
+        saveBtn.textContent = "Selesaikan Proses Ini";
+      });
     }
 
     document.getElementById('save-btn').addEventListener('click', () => {
